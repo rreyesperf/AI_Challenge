@@ -1,0 +1,109 @@
+{
+  "info": {
+    "name": "Travel Search API Tests",
+    "description": "Postman Collection for testing travel search endpoints.",
+    "version": "1.0"
+  },
+  "environment": [
+    {
+      "name": "Base URL",
+      "variables": {
+        "baseUrl": "http://localhost:5000"
+      }
+    }
+  ],
+  "requests": [
+    {
+      "id": 1,
+      "name": "Find Flights",
+      "description": "Test the /api/flights endpoint.",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/flights",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mode": "raw",
+        "raw": "{ \"origin\": \"JFK\", \"destination\": \"LAX\", \"date\": \"2024-03-15\" }"
+      },
+      "scripts": [
+        {
+          "name": "getResponseBody",
+          "code": "pm.response.json()"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Find Transportation",
+      "description": "Test the /api/transportation endpoint.",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/transportation",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mode": "raw",
+        "raw": "{ \"type\": \"bus\", \"location\": \"New York\", \"destination\": \"Boston\" }"
+      },
+      "scripts": [
+        {
+          "name": "getResponseBody",
+          "code": "pm.response.json()"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Find Hotels",
+      "description": "Test the /api/hotels endpoint.",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/hotels",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mode": "raw",
+        "raw": "{ \"location\": \"Paris\", \"checkin_date\": \"2024-03-20\", \"checkout_date\": \"2024-03-25\" }"
+      },
+       "scripts": [
+        {
+          "name": "getResponseBody",
+          "code": "pm.response.json()"
+        }
+      ]
+    },
+     {
+      "id": 4,
+      "name": "Aggregate Results",
+      "description": "Test the /api/aggregate endpoint.",
+      "method": "GET",
+      "url": "{{baseUrl}}/api/aggregate",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mode": "raw",
+        "raw": "{ \"service\": \"flights\", \"origin\": \"JFK\", \"destination\": \"LAX\", \"date\": \"2024-03-15\" }"
+      },
+       "scripts": [
+        {
+          "name": "getResponseBody",
+          "code": "pm.response.json()"
+        }
+      ]
+    }
+  ]
+}
