@@ -1,48 +1,39 @@
 import requests
-from .geolocation import find_geolocation
+from os import environ
 from flask import jsonify
 
-def find_dining_options(budget, timeframe, address):
+def find_geolocation(address):
 
     try:
-        if budget is None:
-            return jsonify({'error': 'Invalid budget'}), 400
-        
-        if timeframe is None:
-            return jsonify({'error': 'Invalid timeframe'}), 400
-        
         if address is None:
             return jsonify({'error': 'Invalid address'}), 400
-        
-        locationData = find_geolocation(address)
+
+        apiKey = environ.get('GOOGLE_API_KEY')
+
+        if apiKey is None:
+            return jsonify({'error': 'Invalid address'}), 400
 
         # Construct the external URL (replace with your target URL)
-        external_url = "https://places.googleapis.com/v1/places:searchNearby"
-
-        data = {
-            "includedTypes": ["restaurant"],
-            "maxResultCount": 20,
-            "locationRestriction": 
-            {
-                "circle": 
-                {
-                    "center": 
-                    {
-                        "latitude": locationData['lat'],
-                        "longitude": locationData['long']
-                    },
-                    "radius": 500.0
-                }
-            }
-        }
+        external_url = "https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={apiKey}}"  # Replace this!
 
         # Send a POST request to the external URL
-        response = requests.post(external_url, body=data)
+        response = requests.get(external_url)
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
         data = response.json()
 
+        formatted_address = data['results'][0]['formatted_address']
+        lat = data['results'][0]['geometry']['location']['lat']
+        lng = data['results'][0]['geometry']['location']['lng']
+
+        address_data = {
+            "formatted_address": formatted_address,
+            "lat": lat,
+            "lng": lng
+        }
+
+
         if response.status_code == 200:
-            return data, 200  # OK
+            return address_data, 200  # OK
         else:
             return jsonify({'status': 'error', 'message': f"External URL failed with status {response.status_code}, response: {response.text}"}), response.status_code # Return error details
 
