@@ -1,4 +1,30 @@
-Flask==2.3.2
+# Core Flask app
+Flask==3.0.0
 requests==2.31.0
+python-dotenv==1.0.1
+gunicorn==21.2.0
+
+# Basic HTML/text processing
 beautifulsoup4==4.12.2
-openai==1.97.1
+
+# LLM providers (install only what you need)
+# Uncomment the ones you want to use:
+
+# OpenAI (includes Azure OpenAI support)
+openai==1.35.3
+
+# Anthropic Claude
+# anthropic==0.25.9
+
+# Google Gemini
+# google-generativeai==0.5.4
+
+# Document processing (optional)
+# PyPDF2==3.0.1
+# python-docx==1.1.0
+
+# RAG/Vector capabilities (optional)
+# sentence-transformers==2.7.0
+# chromadb==0.4.24
+# tiktoken==0.7.0
+# numpy==1.26.4

@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "total_checks": 10,
+  "passed_checks": 10,
+  "issues": [],
+  "warnings": [],
+  "recommendations": [],
+  "azure_compatibility": {
+    "port_8080": true,
+    "non_root_user": true,
+    "production_server": true,
+    "health_endpoint": true,
+    "environment_config": true
+  },
+  "security_checklist": [
+    "\u2705 Non-root user configured",
+    "\u2705 Minimal base image (Python slim)",
+    "\u2705 No secrets in Dockerfile",
+    "\u2705 Proper file permissions",
+    "\u2705 Security headers in application",
+    "\u26a0\ufe0f Ensure secrets are passed via environment variables",
+    "\u26a0\ufe0f Regular security updates for base image",
+    "\u26a0\ufe0f Scan image for vulnerabilities before deployment"
+  ],
+  "instructions_count": 16
+}
