@@ -1,109 +1,434 @@
 {
-  "info": {
-    "name": "Travel Search API Tests",
-    "description": "Postman Collection for testing travel search endpoints.",
-    "version": "1.0"
-  },
-  "environment": [
-    {
-      "name": "Base URL",
-      "variables": {
-        "baseUrl": "http://localhost:5000"
-      }
-    }
-  ],
-  "requests": [
-    {
-      "id": 1,
-      "name": "Find Flights",
-      "description": "Test the /api/flights endpoint.",
-      "method": "GET",
-      "url": "{{baseUrl}}/api/flights",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "body": {
-        "mode": "raw",
-        "raw": "{ \"origin\": \"JFK\", \"destination\": \"LAX\", \"date\": \"2024-03-15\" }"
-      },
-      "scripts": [
-        {
-          "name": "getResponseBody",
-          "code": "pm.response.json()"
-        }
-      ]
-    },
-    {
-      "id": 2,
-      "name": "Find Transportation",
-      "description": "Test the /api/transportation endpoint.",
-      "method": "GET",
-      "url": "{{baseUrl}}/api/transportation",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "body": {
-        "mode": "raw",
-        "raw": "{ \"type\": \"bus\", \"location\": \"New York\", \"destination\": \"Boston\" }"
-      },
-      "scripts": [
-        {
-          "name": "getResponseBody",
-          "code": "pm.response.json()"
-        }
-      ]
-    },
-    {
-      "id": 3,
-      "name": "Find Hotels",
-      "description": "Test the /api/hotels endpoint.",
-      "method": "GET",
-      "url": "{{baseUrl}}/api/hotels",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "body": {
-        "mode": "raw",
-        "raw": "{ \"location\": \"Paris\", \"checkin_date\": \"2024-03-20\", \"checkout_date\": \"2024-03-25\" }"
-      },
-       "scripts": [
-        {
-          "name": "getResponseBody",
-          "code": "pm.response.json()"
-        }
-      ]
-    },
-     {
-      "id": 4,
-      "name": "Aggregate Results",
-      "description": "Test the /api/aggregate endpoint.",
-      "method": "GET",
-      "url": "{{baseUrl}}/api/aggregate",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "body": {
-        "mode": "raw",
-        "raw": "{ \"service\": \"flights\", \"origin\": \"JFK\", \"destination\": \"LAX\", \"date\": \"2024-03-15\" }"
-      },
-       "scripts": [
-        {
-          "name": "getResponseBody",
-          "code": "pm.response.json()"
-        }
-      ]
-    }
-  ]
+  "info": {
+    "name": "Agentic RAG API Collection",
+    "description": "Complete API collection for the Agentic RAG travel and AI services application",
+    "version": "2.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "description": "Base URL for local development"
+    },
+    {
+      "key": "azureUrl",
+      "value": "https://your-app.azurecontainerapps.io",
+      "description": "Azure Container Apps URL (update with your actual URL)"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Root - API Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          }
+        },
+        {
+          "name": "General Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        },
+        {
+          "name": "AI Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Travel Services",
+      "item": [
+        {
+          "name": "Search Flights",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights?origin=NYC&destination=LAX&date=2025-08-15",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights"],
+              "query": [
+                {
+                  "key": "origin",
+                  "value": "NYC",
+                  "description": "Origin airport code"
+                },
+                {
+                  "key": "destination",
+                  "value": "LAX",
+                  "description": "Destination airport code"
+                },
+                {
+                  "key": "date",
+                  "value": "2025-08-15",
+                  "description": "Travel date (YYYY-MM-DD)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Hotels",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/hotels?location=Los Angeles&checkin_date=2025-08-15&checkout_date=2025-08-17",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "hotels"],
+              "query": [
+                {
+                  "key": "location",
+                  "value": "Los Angeles",
+                  "description": "Hotel location"
+                },
+                {
+                  "key": "checkin_date",
+                  "value": "2025-08-15",
+                  "description": "Check-in date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "checkout_date",
+                  "value": "2025-08-17",
+                  "description": "Check-out date (YYYY-MM-DD)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Dining",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dining?budget=100&timeframe=evening&location=Los Angeles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dining"],
+              "query": [
+                {
+                  "key": "budget",
+                  "value": "100",
+                  "description": "Budget amount"
+                },
+                {
+                  "key": "timeframe",
+                  "value": "evening",
+                  "description": "Time preference"
+                },
+                {
+                  "key": "location",
+                  "value": "Los Angeles",
+                  "description": "Dining location"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Transportation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transportation?type=bus&origin=NYC&destination=LAX",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transportation"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "bus",
+                  "description": "Transportation type (bus, train, car)"
+                },
+                {
+                  "key": "origin",
+                  "value": "NYC",
+                  "description": "Origin location"
+                },
+                {
+                  "key": "destination",
+                  "value": "LAX",
+                  "description": "Destination location"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Aggregate All Services",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dining_params\": {\n    \"budget\": \"100\",\n    \"timeframe\": \"evening\",\n    \"location\": \"Los Angeles\"\n  },\n  \"flight_params\": {\n    \"origin\": \"NYC\",\n    \"destination\": \"LAX\",\n    \"date\": \"2025-08-15\"\n  },\n  \"hotel_params\": {\n    \"location\": \"Los Angeles\",\n    \"checkin_date\": \"2025-08-15\",\n    \"checkout_date\": \"2025-08-17\"\n  },\n  \"transportation_params\": {\n    \"type\": \"bus\",\n    \"origin\": \"NYC\",\n    \"destination\": \"LAX\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/aggregate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "aggregate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Services",
+      "item": [
+        {
+          "name": "List AI Providers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/providers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "providers"]
+            }
+          }
+        },
+        {
+          "name": "Basic AI Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Hello, how can you help me plan my trip?\",\n  \"provider\": \"openai\",\n  \"system_message\": \"You are a helpful travel assistant.\",\n  \"max_tokens\": 150,\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          }
+        },
+        {
+          "name": "AI Conversation (Multi-turn)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a helpful travel assistant.\"},\n    {\"role\": \"user\", \"content\": \"I want to plan a trip to Japan\"},\n    {\"role\": \"assistant\", \"content\": \"That sounds exciting! When are you planning to visit Japan?\"},\n    {\"role\": \"user\", \"content\": \"I'm thinking about visiting in spring to see cherry blossoms\"}\n  ],\n  \"provider\": \"openai\",\n  \"max_tokens\": 200,\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/conversation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "conversation"]
+            }
+          }
+        },
+        {
+          "name": "AI Travel Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"I need help planning a 3-day trip to Los Angeles with flights from New York, hotel accommodations, and dining recommendations\",\n  \"flight_params\": {\n    \"origin\": \"NYC\",\n    \"destination\": \"LAX\",\n    \"date\": \"2025-08-15\"\n  },\n  \"hotel_params\": {\n    \"location\": \"Los Angeles\",\n    \"checkin_date\": \"2025-08-15\",\n    \"checkout_date\": \"2025-08-17\"\n  },\n  \"dining_params\": {\n    \"budget\": \"100\",\n    \"timeframe\": \"evening\",\n    \"location\": \"Los Angeles\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/travel-agent",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "travel-agent"]
+            }
+          }
+        },
+        {
+          "name": "AI Multi-Provider Consensus",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"What are the best travel destinations in 2025?\",\n  \"providers\": [\"openai\", \"anthropic\", \"google\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/consensus",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "consensus"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "RAG (Document Processing)",
+      "item": [
+        {
+          "name": "Ingest Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"file_path\": \"/path/to/your/document.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/rag/ingest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "rag", "ingest"]
+            }
+          }
+        },
+        {
+          "name": "Query Documents (RAG)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"What are the visa requirements for Japan?\",\n  \"top_k\": 5,\n  \"provider\": \"openai\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/rag/query",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "rag", "query"]
+            }
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_hash\": \"abc123def456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/rag/delete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "rag", "delete"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Azure Production Examples",
+      "item": [
+        {
+          "name": "Azure - Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{azureUrl}}/api/health",
+              "host": ["{{azureUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        },
+        {
+          "name": "Azure - AI Travel Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "description": "Add if you implement API key authentication"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Plan a weekend getaway to San Francisco with flight and hotel recommendations\",\n  \"flight_params\": {\n    \"origin\": \"LAX\",\n    \"destination\": \"SFO\",\n    \"date\": \"2025-09-01\"\n  },\n  \"hotel_params\": {\n    \"location\": \"San Francisco\",\n    \"checkin_date\": \"2025-09-01\",\n    \"checkout_date\": \"2025-09-03\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{azureUrl}}/api/ai/travel-agent",
+              "host": ["{{azureUrl}}"],
+              "path": ["api", "ai", "travel-agent"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Set environment based on collection variable",
+          "const baseUrl = pm.collectionVariables.get('baseUrl');",
+          "if (baseUrl.includes('azurecontainerapps')) {",
+          "    pm.environment.set('currentEnv', 'azure');",
+          "} else {",
+          "    pm.environment.set('currentEnv', 'local');",
+          "}"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ]
 }
