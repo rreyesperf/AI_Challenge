@@ -30,7 +30,7 @@ CHROMA_PERSIST_DIRECTORY=/app/data/chroma
 
 # LLM Configuration (Optional - has defaults)
 DEFAULT_LLM_PROVIDER=openai
-DEFAULT_MODEL=gpt-3.5-turbo
+DEFAULT_MODEL=GPT-4.1
 MAX_TOKENS=2000
 TEMPERATURE=0.7
 

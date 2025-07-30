@@ -19,7 +19,7 @@ class Config:
     
     # Default LLM Settings
     DEFAULT_LLM_PROVIDER = os.environ.get('DEFAULT_LLM_PROVIDER', 'openai')
-    DEFAULT_MODEL = os.environ.get('DEFAULT_MODEL', 'gpt-3.5-turbo')
+    DEFAULT_MODEL = os.environ.get('DEFAULT_MODEL', 'GPT-4.1')
     MAX_TOKENS = int(os.environ.get('MAX_TOKENS', '2000'))
     TEMPERATURE = float(os.environ.get('TEMPERATURE', '0.7'))
     
