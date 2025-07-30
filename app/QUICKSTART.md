@@ -1,18 +1,34 @@
 # Quick Start Guide
 
+## Local Development recommendations
+
+1. **Set up a virtual environment**
+```bash
+python -m venv venv
+```
+2. **Set up your shell to use the environment’s Python executable and its site-packages by default**
+```bash
+venv\Scripts\activate
+```
+
 ## Installation
 
-1. **Install core dependencies:**
+1. **Install dependencies using requirements.txt:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Install core dependencies:**
    ```bash
    pip install Flask==3.0.0 requests==2.31.0 python-dotenv==1.0.1 beautifulsoup4==4.12.2
    ```
 
-2. **Install OpenAI (recommended):**
+3. **Install OpenAI (recommended):**
    ```bash
-   pip install openai==1.35.3
+   pip install openai==1.98.0
    ```
 
-3. **Set up environment:**
+4. **Set up environment:**
    ```bash
    # Copy the template
    cp .env.template .env
@@ -76,7 +92,7 @@ python routes.py
 - Install missing packages as needed
 
 ### If no AI features work:
-- Install OpenAI: `pip install openai==1.35.3`
+- Install OpenAI: `pip install openai==1.98.0`
 - Set your API key in `.env`
 - Check `/api/ai/health` for status
 

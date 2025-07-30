@@ -6,26 +6,31 @@ Supports OpenAI, Anthropic, Google Gemini, and Azure OpenAI
 import logging
 from typing import Dict, List, Optional, Union, Any
 
+logger = logging.getLogger(__name__)
+
 # Graceful imports with fallbacks
 try:
     import openai
     OPENAI_AVAILABLE = True
-except ImportError:
+except ImportError as ie:
     OPENAI_AVAILABLE = False
+    logger.error(f"OpenAI package import error: {ie}")
     print("Warning: OpenAI package not available")
 
 try:
     import anthropic
     ANTHROPIC_AVAILABLE = True
-except ImportError:
+except ImportError as ie:
     ANTHROPIC_AVAILABLE = False
+    logger.error(f"Anthropic package import error: {ie}")
     print("Warning: Anthropic package not available")
 
 try:
     import google.generativeai as genai
     GOOGLE_AVAILABLE = True
-except ImportError:
+except ImportError as ie:
     GOOGLE_AVAILABLE = False
+    logger.error(f"Google Generative AI package import error: {ie}")
     print("Warning: Google Generative AI package not available")
 
 try:
@@ -44,7 +49,6 @@ except ImportError:
         TEMPERATURE = 0.7
     print("Warning: Could not import config, using fallback settings")
 
-logger = logging.getLogger(__name__)
 
 class LLMProvider:
     """Base class for LLM providers"""

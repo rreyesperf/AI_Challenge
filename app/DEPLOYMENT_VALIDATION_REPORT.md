@@ -92,7 +92,7 @@ All critical tests passed! Your Dockerfile and Flask application are fully valid
 
 ### ⚠️ **Optional AI Services (Install as needed):**
 These are gracefully handled when missing:
-- 🔧 OpenAI 1.35.3 - For GPT models
+- 🔧 OpenAI 1.98.0 - For GPT models
 - 🔧 Anthropic - For Claude models  
 - 🔧 Google Generative AI - For Gemini models
 - 🔧 ChromaDB - For vector storage

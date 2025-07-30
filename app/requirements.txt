@@ -11,7 +11,7 @@ beautifulsoup4==4.12.2
 # Uncomment the ones you want to use:
 
 # OpenAI (includes Azure OpenAI support)
-openai==1.35.3
+openai==1.98.0
 
 # Anthropic Claude
 # anthropic==0.25.9
