@@ -10,6 +10,9 @@ import importlib.util
 from pathlib import Path
 from typing import Dict, Any
 
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 class FlaskStartupSimulator:
     def __init__(self, app_dir: str):
         self.app_dir = Path(app_dir)
@@ -19,8 +22,6 @@ class FlaskStartupSimulator:
     def test_import_routes(self) -> bool:
         """Test if routes module can be imported"""
         try:
-            sys.path.insert(0, str(self.app_dir))
-            
             # Try importing routes
             import routes
             print("✅ routes.py imported successfully")
@@ -322,7 +323,8 @@ class FlaskStartupSimulator:
 
 def main():
     """Main simulation runner"""
-    app_dir = os.getcwd()
+    # Get the app directory (parent of tests directory)
+    app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     simulator = FlaskStartupSimulator(app_dir)
     results = simulator.run_simulation()

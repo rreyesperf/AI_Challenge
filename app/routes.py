@@ -111,13 +111,13 @@ def register_travel_routes(app):
             
         budget = request.args.get('budget')
         timeframe = request.args.get('timeframe')
-        location = request.args.get('location')
+        address = request.args.get('address')  # Changed from 'location' to match dining service
 
-        if not all([budget, timeframe, location]):
+        if not all([budget, timeframe, address]):
             return jsonify({"error": "Missing required parameters"}), 400
 
         try:
-            dining_options = find_dining_options(budget, timeframe, location)
+            dining_options = find_dining_options(budget, timeframe, address)
             return jsonify(dining_options)
         except Exception as e:
             return jsonify({"error": str(e)}), 500
@@ -125,56 +125,115 @@ def register_travel_routes(app):
     @app.route('/api/flights', methods=['GET'])
     def get_flights():
         if not FLIGHTS_AVAILABLE:
-            return jsonify({"error": "Flights service not available"}), 503
+            return jsonify({"flights": [], "errors": ["Flights service not available"]}), 503
             
         origin = request.args.get('origin')
         destination = request.args.get('destination')
-        date = request.args.get('date')
+        departureDate = request.args.get('departureDate')
+        returnDate = request.args.get('returnDate')  # Now REQUIRED
 
-        if not all([origin, destination, date]):
-            return jsonify({"error": "Missing required parameters"}), 400
+        # All four parameters are now mandatory
+        if not all([origin, destination, departureDate, returnDate]):
+            missing_params = []
+            if not origin: missing_params.append("origin")
+            if not destination: missing_params.append("destination")
+            if not departureDate: missing_params.append("departureDate")
+            if not returnDate: missing_params.append("returnDate")
+            
+            return jsonify({
+                "flights": [], 
+                "errors": [f"Missing required parameters: {', '.join(missing_params)}"]
+            }), 400
 
         try:
-            flights = find_flights_by_criteria(origin, destination, date)
-            return jsonify(flights)
+            result = find_flights_by_criteria(origin, destination, departureDate, returnDate)
+            
+            # The service now always returns the correct format with flights and errors arrays
+            # Check if there are errors that should return a 400 status code
+            if result.get("errors") and any("Missing required parameters" in error for error in result["errors"]):
+                return jsonify(result), 400
+            
+            return jsonify(result)
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"flights": [], "errors": [str(e)]}), 500
 
     @app.route('/api/transportation', methods=['GET'])
     def get_transportation():
         if not TRANSPORTATION_AVAILABLE:
-            return jsonify({"error": "Transportation service not available"}), 503
+            return jsonify({"transportation": [], "errors": ["Transportation service not available"]}), 503
             
-        type = request.args.get('type')  # e.g., 'bus', 'train'
-        origin = request.args.get('origin')
-        destination = request.args.get('destination')
+        location = request.args.get('location')
+        pickup = request.args.get('pickup')
+        dropOff = request.args.get('dropOff')
+        pickUpDate = request.args.get('pickUpDate')
+        dropOffDate = request.args.get('dropOffDate')
+        pickupTime = request.args.get('pickupTime')
+        dropOffTime = request.args.get('dropOffTime')
 
-        if not all([type, origin, destination]):
-            return jsonify({"error": "Missing required parameters"}), 400
+        # All seven parameters are now mandatory
+        if not all([location, pickup, dropOff, pickUpDate, dropOffDate, pickupTime, dropOffTime]):
+            missing_params = []
+            if not location: missing_params.append("location")
+            if not pickup: missing_params.append("pickup")
+            if not dropOff: missing_params.append("dropOff")
+            if not pickUpDate: missing_params.append("pickUpDate")
+            if not dropOffDate: missing_params.append("dropOffDate")
+            if not pickupTime: missing_params.append("pickupTime")
+            if not dropOffTime: missing_params.append("dropOffTime")
+            
+            return jsonify({
+                "transportation": [], 
+                "errors": [f"Missing required parameters: {', '.join(missing_params)}"]
+            }), 400
 
         try:
-            transportation_options = find_transportation_options(type, origin, destination)
-            return jsonify(transportation_options)
+            result = find_transportation_options(location, pickup, dropOff, pickUpDate, dropOffDate, pickupTime, dropOffTime)
+            
+            # The service now always returns the correct format with transportation and errors arrays
+            # Check if there are errors that should return a 400 status code
+            if result.get("errors") and any("Missing required parameters" in error for error in result["errors"]):
+                return jsonify(result), 400
+            
+            return jsonify(result)
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"transportation": [], "errors": [str(e)]}), 500
 
     @app.route('/api/hotels', methods=['GET'])
     def get_hotels():
         if not HOTELS_AVAILABLE:
-            return jsonify({"error": "Hotels service not available"}), 503
+            return jsonify({"hotels": [], "errors": ["Hotels service not available"]}), 503
             
-        location = request.args.get('location')
-        checkin_date = request.args.get('checkin_date')
-        checkout_date = request.args.get('checkout_date')
+        country = request.args.get('country')
+        state = request.args.get('state')
+        city = request.args.get('city')
+        arrivalDate = request.args.get('arrivalDate')
+        chekoutDate = request.args.get('chekoutDate')
 
-        if not all([location, checkin_date, checkout_date]):
-            return jsonify({"error": "Missing required parameters"}), 400
+        # All five parameters are now mandatory
+        if not all([country, state, city, arrivalDate, chekoutDate]):
+            missing_params = []
+            if not country: missing_params.append("country")
+            if not state: missing_params.append("state")
+            if not city: missing_params.append("city")
+            if not arrivalDate: missing_params.append("arrivalDate")
+            if not chekoutDate: missing_params.append("chekoutDate")
+            
+            return jsonify({
+                "hotels": [], 
+                "errors": [f"Missing required parameters: {', '.join(missing_params)}"]
+            }), 400
 
         try:
-            hotels = find_hotels_by_criteria(location, checkin_date, checkout_date)
-            return jsonify(hotels)
+            result = find_hotels_by_criteria(country, state, city, arrivalDate, chekoutDate)
+            
+            # The service now always returns the correct format with hotels and errors arrays
+            # Check if there are errors that should return a 400 status code
+            if result.get("errors") and any("Missing required parameters" in error for error in result["errors"]):
+                return jsonify(result), 400
+            
+            return jsonify(result)
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"hotels": [], "errors": [str(e)]}), 500
 
     @app.route('/api/aggregate', methods=['POST'])
     def aggregate():
