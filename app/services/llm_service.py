@@ -399,44 +399,17 @@ class LLMService:
     
     def _initialize_providers(self):
         """Initialize available LLM providers based on configuration"""
-        # OpenAI Provider
-        if OPENAI_AVAILABLE and hasattr(Config, 'OPENAI_API_KEY') and Config.OPENAI_API_KEY:
-            try:
-                self.providers['openai'] = OpenAIProvider()
-                self.providers['openai_gpt4'] = OpenAIProvider(model="gpt-4")
-                logger.info("OpenAI providers initialized successfully")
-            except Exception as e:
-                logger.warning(f"Failed to initialize OpenAI provider: {e}")
+        # Priority order: Local LLM first, then OpenAI, then others
         
-        # Anthropic Provider
-        if ANTHROPIC_AVAILABLE and hasattr(Config, 'ANTHROPIC_API_KEY') and Config.ANTHROPIC_API_KEY:
+        # Local LLM Provider (OpenAI-compatible) - HIGHEST PRIORITY
+        if REQUESTS_AVAILABLE and hasattr(Config, 'LOCAL_LLM_BASE_URL'):
             try:
-                self.providers['anthropic'] = AnthropicProvider()
-                self.providers['claude_opus'] = AnthropicProvider(model="claude-3-opus-20240229")
-                logger.info("Anthropic providers initialized successfully")
+                self.providers['local_llm'] = LocalLLMProvider()
+                logger.info("Local LLM provider initialized successfully")
             except Exception as e:
-                logger.warning(f"Failed to initialize Anthropic provider: {e}")
+                logger.warning(f"Failed to initialize Local LLM provider: {e}")
         
-        # Google Provider
-        if GOOGLE_AVAILABLE and hasattr(Config, 'GOOGLE_API_KEY') and Config.GOOGLE_API_KEY:
-            try:
-                self.providers['google'] = GoogleProvider()
-                self.providers['gemini_pro'] = GoogleProvider(model="gemini-pro")
-                logger.info("Google providers initialized successfully")
-            except Exception as e:
-                logger.warning(f"Failed to initialize Google provider: {e}")
-        
-        # Azure OpenAI Provider
-        if (OPENAI_AVAILABLE and 
-            hasattr(Config, 'AZURE_OPENAI_API_KEY') and Config.AZURE_OPENAI_API_KEY and
-            hasattr(Config, 'AZURE_OPENAI_ENDPOINT') and Config.AZURE_OPENAI_ENDPOINT):
-            try:
-                self.providers['azure_openai'] = AzureOpenAIProvider()
-                logger.info("Azure OpenAI provider initialized successfully")
-            except Exception as e:
-                logger.warning(f"Failed to initialize Azure OpenAI provider: {e}")
-        
-        # Ollama Provider
+        # Ollama Provider - SECOND PRIORITY
         if REQUESTS_AVAILABLE:
             try:
                 # Dynamically discover available Ollama models
@@ -480,22 +453,65 @@ class LLMService:
             except Exception as e:
                 logger.warning(f"Failed to initialize Ollama provider: {e}")
         
-        # Local LLM Provider (OpenAI-compatible)
-        if REQUESTS_AVAILABLE and hasattr(Config, 'LOCAL_LLM_BASE_URL'):
+        # OpenAI Provider - THIRD PRIORITY (fallback for local LLM)
+        if OPENAI_AVAILABLE and hasattr(Config, 'OPENAI_API_KEY') and Config.OPENAI_API_KEY:
             try:
-                self.providers['local_llm'] = LocalLLMProvider()
-                logger.info("Local LLM provider initialized successfully")
+                self.providers['openai'] = OpenAIProvider()
+                self.providers['openai_gpt4'] = OpenAIProvider(model="gpt-4")
+                logger.info("OpenAI providers initialized successfully")
             except Exception as e:
-                logger.warning(f"Failed to initialize Local LLM provider: {e}")
+                logger.warning(f"Failed to initialize OpenAI provider: {e}")
+        
+        # Anthropic Provider
+        if ANTHROPIC_AVAILABLE and hasattr(Config, 'ANTHROPIC_API_KEY') and Config.ANTHROPIC_API_KEY:
+            try:
+                self.providers['anthropic'] = AnthropicProvider()
+                self.providers['claude_opus'] = AnthropicProvider(model="claude-3-opus-20240229")
+                logger.info("Anthropic providers initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Anthropic provider: {e}")
+        
+        # Google Provider
+        if GOOGLE_AVAILABLE and hasattr(Config, 'GOOGLE_API_KEY') and Config.GOOGLE_API_KEY:
+            try:
+                self.providers['google'] = GoogleProvider()
+                self.providers['gemini_pro'] = GoogleProvider(model="gemini-pro")
+                logger.info("Google providers initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Google provider: {e}")
+        
+        # Azure OpenAI Provider
+        if (OPENAI_AVAILABLE and 
+            hasattr(Config, 'AZURE_OPENAI_API_KEY') and Config.AZURE_OPENAI_API_KEY and
+            hasattr(Config, 'AZURE_OPENAI_ENDPOINT') and Config.AZURE_OPENAI_ENDPOINT):
+            try:
+                self.providers['azure_openai'] = AzureOpenAIProvider()
+                logger.info("Azure OpenAI provider initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Azure OpenAI provider: {e}")
         
         if not self.providers:
             logger.warning("No LLM providers could be initialized. Check your API keys and package installations.")
             # Don't raise an error - let the app start but warn users
     
     def get_provider(self, provider_name: str = None) -> LLMProvider:
-        """Get a specific provider or the default one"""
+        """Get a specific provider or the default one with fallback logic"""
         if provider_name is None:
             provider_name = Config.DEFAULT_LLM_PROVIDER
+            
+            # Implement fallback logic: local_llm -> openai -> first available
+            if provider_name == 'local_llm' and 'local_llm' not in self.providers:
+                # If local_llm is not available, try openai as fallback
+                if 'openai' in self.providers:
+                    logger.info("Local LLM not available, falling back to OpenAI")
+                    provider_name = 'openai'
+                elif self.providers:
+                    # If neither local_llm nor openai available, use first available
+                    provider_name = list(self.providers.keys())[0]
+                    logger.info(f"Local LLM and OpenAI not available, falling back to {provider_name}")
+                else:
+                    available = list(self.providers.keys())
+                    raise ValueError(f"No LLM providers available. Available providers: {available}")
         
         if provider_name not in self.providers:
             available = list(self.providers.keys())

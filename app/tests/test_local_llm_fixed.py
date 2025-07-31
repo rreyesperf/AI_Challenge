@@ -183,7 +183,7 @@ def test_api_integration(base_url: str = "http://localhost:5000") -> Dict[str, A
         mock_response.json.return_value = {
             "status": "healthy",
             "available_providers": 3,
-            "providers": ["local_llm", "openai", "ollama"]  # Local LLM first
+            "providers": ["openai", "ollama", "local_llm"]
         }
         mock_get.return_value = mock_response
         

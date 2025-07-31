@@ -38,8 +38,8 @@ PINECONE_ENVIRONMENT=your_pinecone_environment
 
 ### LLM Configuration:
 ```env
-DEFAULT_LLM_PROVIDER=openai
-DEFAULT_MODEL=gpt-3.5-turbo
+DEFAULT_LLM_PROVIDER=local_llm
+DEFAULT_MODEL=local-model
 MAX_TOKENS=2000
 TEMPERATURE=0.7
 ```

@@ -62,12 +62,12 @@ python server.py --api --listen --listen-port 8000
 1. Download from: https://lmstudio.ai/
 2. Install and download a model (e.g., Llama 2, Code Llama)
 3. Start local server with OpenAI API compatibility
-4. Default runs on `http://localhost:1234`
+4. Default runs on `http://localhost:11434`
 
 #### Configuration
 ```bash
 # Local LLM server configuration
-LOCAL_LLM_BASE_URL=http://localhost:8000  # or http://localhost:1234 for LM Studio
+LOCAL_LLM_BASE_URL=http://localhost:11434  # or http://localhost:1234 for LM Studio
 LOCAL_LLM_API_KEY=your_api_key_if_required  # Optional
 DEFAULT_LLM_PROVIDER=local_llm
 ```

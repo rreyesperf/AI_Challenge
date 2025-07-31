@@ -135,7 +135,7 @@ class TestLocalLLMProvider(unittest.TestCase):
         provider = LocalLLMProvider(model="local-model")
         self.assertEqual(provider.provider_name, "local_llm")
         self.assertEqual(provider.model, "local-model")
-        self.assertEqual(provider.base_url, "http://localhost:8000")
+        self.assertEqual(provider.base_url, "http://localhost:11434")
     
     @patch('services.llm_service.requests')
     def test_local_llm_chat(self, mock_requests):
@@ -318,6 +318,10 @@ def run_tests():
                 print(f"- {test}: {traceback}")
     
     return result.wasSuccessful()
+
+def main():
+    """Main function for test runner compatibility"""
+    return run_tests()
 
 
 if __name__ == "__main__":

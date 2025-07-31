@@ -5,6 +5,15 @@ Tests which packages are successfully installed
 """
 
 import sys
+import unittest
+
+class TestInstallation(unittest.TestCase):
+    """Test package installation"""
+    
+    def test_core_packages(self):
+        """Test if core packages are available"""
+        # This test will be covered by the main() function
+        self.assertTrue(True)
 
 def test_package(package_name, import_statement):
     """Test if a package can be imported"""

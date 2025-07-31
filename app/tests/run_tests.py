@@ -49,6 +49,19 @@ class TestRunner:
                     (attr_name.startswith('test_') or 
                      attr_name == 'main' or 
                      attr_name in ['test_aggregation', 'test_aggregation_final'])):
+                    
+                    # Skip functions that require parameters (like test_package)
+                    import inspect
+                    try:
+                        sig = inspect.signature(attr)
+                        required_params = [p for p in sig.parameters.values() 
+                                         if p.default == inspect.Parameter.empty]
+                        if len(required_params) > 0:
+                            print(f"   Skipping {attr_name} (requires parameters)")
+                            continue
+                    except:
+                        pass
+                    
                     test_functions.append((attr_name, attr))
             
             if not test_functions:
@@ -56,7 +69,8 @@ class TestRunner:
                 print(f"   No test functions found, attempting to run module directly...")
                 try:
                     # This will run the if __name__ == "__main__" block
-                    exec(open(test_file_path).read())
+                    with open(test_file_path, 'r', encoding='utf-8') as f:
+                        exec(f.read())
                     self.passed += 1
                     self.results[test_name] = "PASSED"
                     print(f"✅ {test_name} completed successfully")
