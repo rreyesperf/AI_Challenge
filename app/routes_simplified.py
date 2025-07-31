@@ -60,23 +60,19 @@ def create_app():
 
             user_message = data['message']
             conversation_history = data.get('conversation_history', [])
-            
-            # Prepare kwargs for enhanced chat service
-            kwargs = {}
-            if data.get('provider'):
-                kwargs['provider'] = data['provider']
-            if data.get('system_message'):
-                kwargs['system_message'] = data['system_message']
-            if data.get('max_tokens'):
-                kwargs['max_tokens'] = data['max_tokens']
-            if data.get('temperature'):
-                kwargs['temperature'] = data['temperature']
+            provider = data.get('provider')
+            system_message = data.get('system_message')
+            max_tokens = data.get('max_tokens')
+            temperature = data.get('temperature')
 
             # Use enhanced chat service
             response = enhanced_chat_service(
                 message=user_message,
                 conversation_history=conversation_history,
-                **kwargs
+                provider_name=provider,
+                system_message=system_message,
+                max_tokens=max_tokens,
+                temperature=temperature
             )
 
             return jsonify(response)
