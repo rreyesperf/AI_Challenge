@@ -39,7 +39,7 @@ PINECONE_ENVIRONMENT=your_pinecone_environment
 ### LLM Configuration:
 ```env
 DEFAULT_LLM_PROVIDER=openai
-DEFAULT_MODEL=GPT-4.1
+DEFAULT_MODEL=gpt-3.5-turbo
 MAX_TOKENS=2000
 TEMPERATURE=0.7
 ```
@@ -76,7 +76,7 @@ Basic chat with provider selection.
   "success": true,
   "response": "Hello! I'm here to help...",
   "provider": "openai",
-  "model": "GPT-4.1"
+  "model": "gpt-3.5-turbo"
 }
 ```
 
@@ -212,7 +212,7 @@ Query documents using RAG.
     }
   ],
   "llm_provider": "openai",
-  "llm_model": "GPT-4.1",
+  "llm_model": "gpt-3.5-turbo",
   "chunks_used": 3
 }
 ```

@@ -67,7 +67,7 @@ class LLMProvider:
 class OpenAIProvider(LLMProvider):
     """OpenAI LLM Provider"""
     
-    def __init__(self, model: str = "GPT-4.1", **kwargs):
+    def __init__(self, model: str = "gpt-3.5-turbo", **kwargs):
         if not OPENAI_AVAILABLE:
             raise ImportError("OpenAI package is not installed. Install with: pip install openai")
         if not Config.OPENAI_API_KEY:
@@ -245,7 +245,7 @@ class LLMService:
         if OPENAI_AVAILABLE and hasattr(Config, 'OPENAI_API_KEY') and Config.OPENAI_API_KEY:
             try:
                 self.providers['openai'] = OpenAIProvider()
-                self.providers['openai_gpt4'] = OpenAIProvider(model="gpt-4")
+                self.providers['openai_gpt4'] = OpenAIProvider(model="gpt-3.5-turbo")
                 logger.info("OpenAI providers initialized successfully")
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI provider: {e}")
