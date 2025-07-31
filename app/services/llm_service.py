@@ -52,11 +52,9 @@ except ImportError:
         AZURE_OPENAI_ENDPOINT = None
         AZURE_OPENAI_API_KEY = None
         AZURE_OPENAI_API_VERSION = "2024-02-15-preview"
-        # Local LLM Configuration
+        # Local LLM Configuration (Ollama)
         OLLAMA_BASE_URL = "http://localhost:11434"
-        LOCAL_LLM_BASE_URL = "http://localhost:8000"
-        LOCAL_LLM_API_KEY = None
-        DEFAULT_LLM_PROVIDER = "openai"
+        DEFAULT_LLM_PROVIDER = "ollama"
         MAX_TOKENS = 2000
         TEMPERATURE = 0.7
     print("Warning: Could not import config, using fallback settings")
@@ -324,72 +322,6 @@ class OllamaProvider(LLMProvider):
             logger.error(f"Ollama chat API error: {e}")
             raise
 
-class LocalLLMProvider(LLMProvider):
-    """Generic Local LLM Provider for OpenAI-compatible APIs"""
-    
-    def __init__(self, model: str = "local-model", base_url: str = None, api_key: str = None, **kwargs):
-        if not REQUESTS_AVAILABLE:
-            raise ImportError("Requests package is not installed. Install with: pip install requests")
-        
-        super().__init__("local_llm", model, **kwargs)
-        self.base_url = base_url or getattr(Config, 'LOCAL_LLM_BASE_URL', 'http://localhost:8000')
-        self.api_key = api_key or getattr(Config, 'LOCAL_LLM_API_KEY', None)
-        
-        # Test connection
-        self._test_connection()
-    
-    def _test_connection(self):
-        """Test if local LLM server is running"""
-        try:
-            headers = {}
-            if self.api_key:
-                headers["Authorization"] = f"Bearer {self.api_key}"
-            
-            response = requests.get(f"{self.base_url}/v1/models", headers=headers, timeout=5)
-            if response.status_code == 200:
-                logger.info(f"Local LLM connection successful at {self.base_url}")
-            else:
-                logger.warning(f"Local LLM responded with status {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"Could not connect to local LLM at {self.base_url}: {e}")
-    
-    def generate(self, prompt: str, system_message: str = None, **kwargs) -> str:
-        messages = []
-        if system_message:
-            messages.append({"role": "system", "content": system_message})
-        messages.append({"role": "user", "content": prompt})
-        
-        return self.chat(messages, **kwargs)
-    
-    def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        try:
-            headers = {"Content-Type": "application/json"}
-            if self.api_key:
-                headers["Authorization"] = f"Bearer {self.api_key}"
-            
-            payload = {
-                "model": self.model,
-                "messages": messages,
-                "max_tokens": kwargs.get('max_tokens', Config.MAX_TOKENS),
-                "temperature": kwargs.get('temperature', Config.TEMPERATURE),
-                "stream": False
-            }
-            
-            response = requests.post(
-                f"{self.base_url}/v1/chat/completions",
-                json=payload,
-                headers=headers,
-                timeout=120
-            )
-            response.raise_for_status()
-            
-            result = response.json()
-            return result["choices"][0]["message"]["content"]
-            
-        except Exception as e:
-            logger.error(f"Local LLM API error: {e}")
-            raise
-
 class LLMService:
     """Main LLM Service that manages multiple providers"""
     
@@ -398,120 +330,84 @@ class LLMService:
         self._initialize_providers()
     
     def _initialize_providers(self):
-        """Initialize available LLM providers based on configuration"""
-        # Priority order: Local LLM first, then OpenAI, then others
+        """Initialize available LLM providers in priority order: Ollama → OpenAI → Anthropic → Google"""
         
-        # Local LLM Provider (OpenAI-compatible) - HIGHEST PRIORITY
-        if REQUESTS_AVAILABLE and hasattr(Config, 'LOCAL_LLM_BASE_URL'):
-            try:
-                self.providers['local_llm'] = LocalLLMProvider()
-                logger.info("Local LLM provider initialized successfully")
-            except Exception as e:
-                logger.warning(f"Failed to initialize Local LLM provider: {e}")
-        
-        # Ollama Provider - SECOND PRIORITY
+        # 1. Ollama Provider (Local LLM) - HIGHEST PRIORITY
         if REQUESTS_AVAILABLE:
             try:
-                # Dynamically discover available Ollama models
+                # Try to discover available Ollama models
                 available_models = []
                 try:
                     ollama_url = getattr(Config, 'OLLAMA_BASE_URL', 'http://localhost:11434')
                     response = requests.get(f"{ollama_url}/api/tags", timeout=5)
                     if response.status_code == 200:
                         models_data = response.json()
-                        # Keep the full model name including version tag (e.g., 'llama3:8b')
                         available_models = [model.get('name', '') for model in models_data.get('models', [])]
-                        available_models = [m for m in available_models if m]  # Filter out empty names
+                        available_models = [m for m in available_models if m]
                         logger.info(f"Discovered Ollama models: {available_models}")
                 except Exception as e:
                     logger.warning(f"Could not discover Ollama models: {e}")
                 
-                # If no models discovered, try common ones as fallback
-                if not available_models:
-                    available_models = ['llama2', 'llama3', 'codellama', 'mistral', 'neural-chat']
-                    logger.info("Using fallback model list for Ollama")
-                
-                # Try to initialize providers for available models
-                for model in available_models:
-                    try:
-                        provider = OllamaProvider(model=model)
-                        self.providers[f'ollama_{model}'] = provider
-                        logger.info(f"Ollama provider initialized successfully for model: {model}")
+                # Use first available model or fallback to common ones
+                if available_models:
+                    self.providers['ollama'] = OllamaProvider(model=available_models[0])
+                    logger.info(f"Ollama provider initialized with model: {available_models[0]}")
+                else:
+                    # Try common model names as fallback
+                    for fallback_model in ['llama3', 'llama2', 'mistral', 'codellama']:
+                        try:
+                            self.providers['ollama'] = OllamaProvider(model=fallback_model)
+                            logger.info(f"Ollama provider initialized with fallback model: {fallback_model}")
+                            break
+                        except Exception:
+                            continue
+                    
+                    if 'ollama' not in self.providers:
+                        logger.warning("Could not initialize Ollama provider")
                         
-                        # Use the first successfully initialized model as the default 'ollama' provider
-                        if 'ollama' not in self.providers:
-                            self.providers['ollama'] = provider
-                        
-                        break  # Stop after first successful initialization
-                    except Exception as e:
-                        logger.debug(f"Failed to initialize Ollama provider for {model}: {e}")
-                        continue
-                
-                if not any(key.startswith('ollama') for key in self.providers.keys()):
-                    logger.warning("No Ollama providers could be initialized")
-                
             except Exception as e:
                 logger.warning(f"Failed to initialize Ollama provider: {e}")
         
-        # OpenAI Provider - THIRD PRIORITY (fallback for local LLM)
+        # 2. OpenAI Provider - SECOND PRIORITY
         if OPENAI_AVAILABLE and hasattr(Config, 'OPENAI_API_KEY') and Config.OPENAI_API_KEY:
             try:
                 self.providers['openai'] = OpenAIProvider()
-                self.providers['openai_gpt4'] = OpenAIProvider(model="gpt-4")
-                logger.info("OpenAI providers initialized successfully")
+                logger.info("OpenAI provider initialized successfully")
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI provider: {e}")
         
-        # Anthropic Provider
+        # 3. Anthropic Provider - THIRD PRIORITY
         if ANTHROPIC_AVAILABLE and hasattr(Config, 'ANTHROPIC_API_KEY') and Config.ANTHROPIC_API_KEY:
             try:
                 self.providers['anthropic'] = AnthropicProvider()
-                self.providers['claude_opus'] = AnthropicProvider(model="claude-3-opus-20240229")
-                logger.info("Anthropic providers initialized successfully")
+                logger.info("Anthropic provider initialized successfully")
             except Exception as e:
                 logger.warning(f"Failed to initialize Anthropic provider: {e}")
         
-        # Google Provider
+        # 4. Google Provider - FOURTH PRIORITY
         if GOOGLE_AVAILABLE and hasattr(Config, 'GOOGLE_API_KEY') and Config.GOOGLE_API_KEY:
             try:
                 self.providers['google'] = GoogleProvider()
-                self.providers['gemini_pro'] = GoogleProvider(model="gemini-pro")
-                logger.info("Google providers initialized successfully")
+                logger.info("Google provider initialized successfully")
             except Exception as e:
                 logger.warning(f"Failed to initialize Google provider: {e}")
         
-        # Azure OpenAI Provider
-        if (OPENAI_AVAILABLE and 
-            hasattr(Config, 'AZURE_OPENAI_API_KEY') and Config.AZURE_OPENAI_API_KEY and
-            hasattr(Config, 'AZURE_OPENAI_ENDPOINT') and Config.AZURE_OPENAI_ENDPOINT):
-            try:
-                self.providers['azure_openai'] = AzureOpenAIProvider()
-                logger.info("Azure OpenAI provider initialized successfully")
-            except Exception as e:
-                logger.warning(f"Failed to initialize Azure OpenAI provider: {e}")
-        
         if not self.providers:
-            logger.warning("No LLM providers could be initialized. Check your API keys and package installations.")
-            # Don't raise an error - let the app start but warn users
+            logger.warning("No LLM providers could be initialized. Check your Ollama installation and API keys.")
     
     def get_provider(self, provider_name: str = None) -> LLMProvider:
         """Get a specific provider or the default one with fallback logic"""
         if provider_name is None:
-            provider_name = Config.DEFAULT_LLM_PROVIDER
+            # Strict priority order: Ollama → OpenAI → Anthropic → Google
+            priority_order = ['ollama', 'openai', 'anthropic', 'google']
             
-            # Implement fallback logic: local_llm -> openai -> first available
-            if provider_name == 'local_llm' and 'local_llm' not in self.providers:
-                # If local_llm is not available, try openai as fallback
-                if 'openai' in self.providers:
-                    logger.info("Local LLM not available, falling back to OpenAI")
-                    provider_name = 'openai'
-                elif self.providers:
-                    # If neither local_llm nor openai available, use first available
-                    provider_name = list(self.providers.keys())[0]
-                    logger.info(f"Local LLM and OpenAI not available, falling back to {provider_name}")
-                else:
-                    available = list(self.providers.keys())
-                    raise ValueError(f"No LLM providers available. Available providers: {available}")
+            for fallback_provider in priority_order:
+                if fallback_provider in self.providers:
+                    return self.providers[fallback_provider]
+            
+            # If no priority providers available, raise error
+            available = list(self.providers.keys())
+            raise ValueError(f"No LLM providers available. Available providers: {available}")
         
         if provider_name not in self.providers:
             available = list(self.providers.keys())
@@ -520,50 +416,115 @@ class LLMService:
         return self.providers[provider_name]
     
     def generate_response(self, prompt: str, provider_name: str = None, system_message: str = None, **kwargs) -> Dict[str, Any]:
-        """Generate a response using the specified provider"""
-        provider = self.get_provider(provider_name)
-        
-        try:
-            response = provider.generate(prompt, system_message, **kwargs)
-            return {
-                "success": True,
-                "response": response,
-                "provider": provider.provider_name,
-                "model": provider.model
-            }
-        except Exception as e:
-            logger.error(f"Error generating response with {provider.provider_name}: {e}")
+        """Generate a response using the specified provider with fallback"""
+        # If no provider specified, try providers in strict priority order: Ollama → OpenAI → Anthropic → Google
+        if provider_name is None:
+            priority_order = ['ollama', 'openai', 'anthropic', 'google']
+            
+            last_error = None
+            for provider_to_try in priority_order:
+                if provider_to_try in self.providers:
+                    try:
+                        provider = self.providers[provider_to_try]
+                        response = provider.generate(prompt, system_message, **kwargs)
+                        logger.info(f"Successfully used provider: {provider.provider_name}")
+                        return {
+                            "success": True,
+                            "response": response,
+                            "provider": provider.provider_name,
+                            "model": provider.model
+                        }
+                    except Exception as e:
+                        logger.warning(f"Provider {provider_to_try} failed: {e}")
+                        last_error = e
+                        continue
+            
+            # If all providers failed
             return {
                 "success": False,
-                "error": str(e),
-                "provider": provider.provider_name,
-                "model": provider.model
+                "error": f"All providers failed. Last error: {last_error}",
+                "provider": "none",
+                "model": "none"
             }
+        else:
+            # Use specific provider (original behavior)
+            provider = self.get_provider(provider_name)
+            
+            try:
+                response = provider.generate(prompt, system_message, **kwargs)
+                return {
+                    "success": True,
+                    "response": response,
+                    "provider": provider.provider_name,
+                    "model": provider.model
+                }
+            except Exception as e:
+                logger.error(f"Error generating response with {provider.provider_name}: {e}")
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "provider": provider.provider_name,
+                    "model": provider.model
+                }
     
     def chat_completion(self, messages: List[Dict[str, str]], provider_name: str = None, **kwargs) -> Dict[str, Any]:
-        """Chat completion using the specified provider"""
-        provider = self.get_provider(provider_name)
-        
-        try:
-            response = provider.chat(messages, **kwargs)
-            return {
-                "success": True,
-                "response": response,
-                "provider": provider.provider_name,
-                "model": provider.model
-            }
-        except Exception as e:
-            logger.error(f"Error in chat completion with {provider.provider_name}: {e}")
+        """Chat completion using the specified provider with fallback"""
+        # If no provider specified, try providers in strict priority order: Ollama → OpenAI → Anthropic → Google
+        if provider_name is None:
+            priority_order = ['ollama', 'openai', 'anthropic', 'google']
+            
+            last_error = None
+            for provider_to_try in priority_order:
+                if provider_to_try in self.providers:
+                    try:
+                        provider = self.providers[provider_to_try]
+                        response = provider.chat(messages, **kwargs)
+                        logger.info(f"Successfully used provider: {provider.provider_name}")
+                        return {
+                            "success": True,
+                            "response": response,
+                            "provider": provider.provider_name,
+                            "model": provider.model
+                        }
+                    except Exception as e:
+                        logger.warning(f"Provider {provider_to_try} failed: {e}")
+                        last_error = e
+                        continue
+            
+            # If all providers failed
             return {
                 "success": False,
-                "error": str(e),
-                "provider": provider.provider_name,
-                "model": provider.model
+                "error": f"All providers failed. Last error: {last_error}",
+                "provider": "none",
+                "model": "none"
             }
+        else:
+            # Use specific provider (original behavior)
+            provider = self.get_provider(provider_name)
+            
+            try:
+                response = provider.chat(messages, **kwargs)
+                return {
+                    "success": True,
+                    "response": response,
+                    "provider": provider.provider_name,
+                    "model": provider.model
+                }
+            except Exception as e:
+                logger.error(f"Error in chat completion with {provider.provider_name}: {e}")
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "provider": provider.provider_name,
+                    "model": provider.model
+                }
     
     def list_providers(self) -> List[str]:
-        """List all available providers"""
-        return list(self.providers.keys())
+        """List all available providers in strict priority order: Ollama → OpenAI → Anthropic → Google"""
+        priority_order = ['ollama', 'openai', 'anthropic', 'google']
+        
+        # Return only providers that exist, in priority order
+        return [provider for provider in priority_order if provider in self.providers]
 
 # Initialize the global LLM service
 llm_service = LLMService()

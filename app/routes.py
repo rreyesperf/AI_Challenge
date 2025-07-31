@@ -447,7 +447,7 @@ def register_ai_routes(app):
                 return jsonify({'error': 'Invalid request. Missing "prompt" field.'}), 400
 
             prompt = data['prompt']
-            providers = data.get('providers', ['openai', 'anthropic', 'google'])
+            providers = data.get('providers', ['local_llm', 'openai', 'anthropic', 'google'])
             
             result = agentic_workflow.multi_provider_consensus(prompt, providers)
             return jsonify(result)

@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from services.llm_service import (
-        LLMService, LLMProvider, OllamaProvider, LocalLLMProvider,
+        LLMService, LLMProvider, OllamaProvider,
         OpenAIProvider, AnthropicProvider, GoogleProvider, AzureOpenAIProvider
     )
     SERVICES_AVAILABLE = True
@@ -118,66 +118,6 @@ class TestOllamaProvider(unittest.TestCase):
         mock_requests.post.assert_called_once()
 
 
-class TestLocalLLMProvider(unittest.TestCase):
-    """Test Local LLM provider functionality"""
-    
-    @patch('services.llm_service.requests')
-    def test_local_llm_provider_initialization(self, mock_requests):
-        """Test Local LLM provider initialization"""
-        if not SERVICES_AVAILABLE:
-            self.skipTest("LLM services not available")
-        
-        # Mock successful connection test
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_requests.get.return_value = mock_response
-        
-        provider = LocalLLMProvider(model="local-model")
-        self.assertEqual(provider.provider_name, "local_llm")
-        self.assertEqual(provider.model, "local-model")
-        self.assertEqual(provider.base_url, "http://localhost:11434")
-    
-    @patch('services.llm_service.requests')
-    def test_local_llm_chat(self, mock_requests):
-        """Test Local LLM chat method"""
-        if not SERVICES_AVAILABLE:
-            self.skipTest("LLM services not available")
-        
-        # Mock connection test
-        mock_get_response = Mock()
-        mock_get_response.status_code = 200
-        mock_requests.get.return_value = mock_get_response
-        
-        # Mock chat API call
-        mock_post_response = Mock()
-        mock_post_response.status_code = 200
-        mock_post_response.json.return_value = {
-            "choices": [{"message": {"content": "Test response from local LLM"}}]
-        }
-        mock_requests.post.return_value = mock_post_response
-        
-        provider = LocalLLMProvider(model="local-model")
-        messages = [{"role": "user", "content": "Hello"}]
-        response = provider.chat(messages)
-        
-        self.assertEqual(response, "Test response from local LLM")
-        mock_requests.post.assert_called_once()
-    
-    @patch('services.llm_service.requests')
-    def test_local_llm_with_api_key(self, mock_requests):
-        """Test Local LLM provider with API key"""
-        if not SERVICES_AVAILABLE:
-            self.skipTest("LLM services not available")
-        
-        # Mock connection test
-        mock_get_response = Mock()
-        mock_get_response.status_code = 200
-        mock_requests.get.return_value = mock_get_response
-        
-        provider = LocalLLMProvider(model="local-model", api_key="test-key")
-        self.assertEqual(provider.api_key, "test-key")
-
-
 class TestLLMService(unittest.TestCase):
     """Test the main LLM service"""
     
@@ -197,6 +137,51 @@ class TestLLMService(unittest.TestCase):
         service = LLMService()
         providers = service.list_providers()
         self.assertIsInstance(providers, list)
+        
+        # Test that providers are in priority order
+        expected_order = ['ollama', 'openai', 'anthropic', 'google']
+        available_expected = [p for p in expected_order if p in providers]
+        self.assertEqual(providers, available_expected)
+    
+    def test_get_provider_invalid(self):
+        """Test getting invalid provider raises error"""
+        if not SERVICES_AVAILABLE:
+            self.skipTest("LLM services not available")
+        
+        service = LLMService()
+        with self.assertRaises(ValueError):
+            service.get_provider("invalid_provider")
+    
+    def test_get_provider_default(self):
+        """Test getting default provider"""
+        if not SERVICES_AVAILABLE:
+            self.skipTest("LLM services not available")
+        
+        service = LLMService()
+        providers = service.list_providers()
+        
+        if providers:
+            default_provider = service.get_provider()
+            # Default should be first available provider
+            self.assertEqual(default_provider.provider_name, providers[0])
+    
+    def test_priority_order(self):
+        """Test that providers are initialized in correct priority order"""
+        if not SERVICES_AVAILABLE:
+            self.skipTest("LLM services not available")
+        
+        service = LLMService()
+        providers = service.list_providers()
+        
+        # Define expected priority order
+        expected_order = ['ollama', 'openai', 'anthropic', 'google']
+        
+        # Filter to only available providers in expected order
+        available_expected = [p for p in expected_order if p in providers]
+        
+        # Verify order matches
+        self.assertEqual(providers, available_expected, 
+                        f"Provider order should be {available_expected}, got {providers}")
     
     def test_get_provider_invalid(self):
         """Test getting invalid provider raises error"""
@@ -288,7 +273,6 @@ def run_tests():
     # Add test classes
     suite.addTests(loader.loadTestsFromTestCase(TestLLMProvider))
     suite.addTests(loader.loadTestsFromTestCase(TestOllamaProvider))
-    suite.addTests(loader.loadTestsFromTestCase(TestLocalLLMProvider))
     suite.addTests(loader.loadTestsFromTestCase(TestLLMService))
     suite.addTests(loader.loadTestsFromTestCase(TestProviderImports))
     

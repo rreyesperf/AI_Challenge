@@ -38,16 +38,9 @@ def find_hotels_by_criteria(country, state, city, arrivalDate, chekoutDate):
         # Import LLM service here to avoid circular imports
         from .llm_service import llm_service
         
-        # Get the first available LLM provider dynamically
-        available_providers = llm_service.list_providers()
-        if not available_providers:
-            return {
-                "hotels": [],
-                "errors": ["No services available at the moment"]
-            }
-        
-        # Use the first available provider
-        provider_name = available_providers[0]
+        # Use None to let get_provider() handle priority selection and fallback
+        provider_name = None
+        logger.info(f"Using default LLM provider with fallback logic")
         logger.info(f"Using LLM provider: {provider_name}")
         
         # Create a detailed prompt for hotel search

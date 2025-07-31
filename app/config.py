@@ -12,10 +12,8 @@ class Config:
     AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')
     AZURE_OPENAI_API_VERSION = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-15-preview')
     
-    # Local LLM Configuration
+    # Local LLM Configuration (Ollama)
     OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
-    LOCAL_LLM_BASE_URL = os.environ.get('LOCAL_LLM_BASE_URL', 'http://localhost:11434')  # Updated for LM Studio default
-    LOCAL_LLM_API_KEY = os.environ.get('LOCAL_LLM_API_KEY')  # Optional for local servers
     
     # Vector Database Configuration
     PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
@@ -23,8 +21,8 @@ class Config:
     CHROMA_PERSIST_DIRECTORY = os.environ.get('CHROMA_PERSIST_DIRECTORY', './data/chroma')
     
     # Default LLM Settings
-    DEFAULT_LLM_PROVIDER = os.environ.get('DEFAULT_LLM_PROVIDER', 'local_llm')
-    DEFAULT_MODEL = os.environ.get('DEFAULT_MODEL', 'local-model')
+    DEFAULT_LLM_PROVIDER = os.environ.get('DEFAULT_LLM_PROVIDER', 'ollama')
+    DEFAULT_MODEL = os.environ.get('DEFAULT_MODEL', 'llama3')
     MAX_TOKENS = int(os.environ.get('MAX_TOKENS', '2000'))
     TEMPERATURE = float(os.environ.get('TEMPERATURE', '0.7'))
     

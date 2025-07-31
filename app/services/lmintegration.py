@@ -86,7 +86,7 @@ class AgenticWorkflow:
             
             analysis_response = self.llm_service.generate_response(
                 prompt=analysis_prompt,
-                provider_name="openai_gpt4",  # Use more capable model for complex analysis
+                provider_name=None,  # Use default provider with proper fallback logic
                 system_message="You are a travel advisor. Provide detailed, practical recommendations."
             )
             
@@ -108,7 +108,7 @@ class AgenticWorkflow:
     
     def multi_provider_consensus(self, prompt: str, providers: List[str] = None) -> Dict[str, Any]:
         """Get responses from multiple providers for consensus"""
-        providers = providers or ["openai", "anthropic", "google"]
+        providers = providers or ["local_llm", "openai", "anthropic", "google"]
         available_providers = self.llm_service.list_providers()
         
         # Filter to only available providers
@@ -271,7 +271,7 @@ def delete_document_service(document_hash: str) -> Dict[str, Any]:
 def multi_provider_consensus_service(prompt: str, providers: List[str] = None) -> Dict[str, Any]:
     """Multi-provider consensus service function"""
     try:
-        providers = providers or ['openai', 'anthropic', 'google']
+        providers = providers or ['local_llm', 'openai', 'anthropic', 'google']
         result = agentic_workflow.multi_provider_consensus(prompt, providers)
         return result
     except Exception as e:
@@ -285,7 +285,7 @@ def list_providers_service() -> Dict[str, Any]:
     
     try:
         providers = llm_service.list_providers()
-        default_provider = getattr(Config, 'DEFAULT_LLM_PROVIDER', 'openai')
+        default_provider = getattr(Config, 'DEFAULT_LLM_PROVIDER', 'local_llm')
         return {
             "available_providers": providers,
             "default_provider": default_provider
