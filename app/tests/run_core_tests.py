@@ -29,7 +29,8 @@ class CoreTestRunner:
             "test_hotels_standalone.py",
             "test_installation.py",
             "test_transportation_standalone.py",
-            "test_with_context.py"
+            "test_with_context.py",
+            "test_llm_service.py"  # Add LLM service tests
         ]
         
     def run_test_file(self, test_file_path):

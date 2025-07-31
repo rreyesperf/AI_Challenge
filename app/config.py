@@ -12,6 +12,11 @@ class Config:
     AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')
     AZURE_OPENAI_API_VERSION = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-02-15-preview')
     
+    # Local LLM Configuration
+    OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
+    LOCAL_LLM_BASE_URL = os.environ.get('LOCAL_LLM_BASE_URL', 'http://localhost:8000')
+    LOCAL_LLM_API_KEY = os.environ.get('LOCAL_LLM_API_KEY')  # Optional for local servers
+    
     # Vector Database Configuration
     PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
     PINECONE_ENVIRONMENT = os.environ.get('PINECONE_ENVIRONMENT')

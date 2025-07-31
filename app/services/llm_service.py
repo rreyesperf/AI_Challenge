@@ -34,6 +34,14 @@ except ImportError as ie:
     print("Warning: Google Generative AI package not available")
 
 try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError as ie:
+    REQUESTS_AVAILABLE = False
+    logger.error(f"Requests package import error: {ie}")
+    print("Warning: Requests package not available - local LLM services disabled")
+
+try:
     from config import Config
 except ImportError:
     # Fallback config if import fails
@@ -44,6 +52,10 @@ except ImportError:
         AZURE_OPENAI_ENDPOINT = None
         AZURE_OPENAI_API_KEY = None
         AZURE_OPENAI_API_VERSION = "2024-02-15-preview"
+        # Local LLM Configuration
+        OLLAMA_BASE_URL = "http://localhost:11434"
+        LOCAL_LLM_BASE_URL = "http://localhost:8000"
+        LOCAL_LLM_API_KEY = None
         DEFAULT_LLM_PROVIDER = "openai"
         MAX_TOKENS = 2000
         TEMPERATURE = 0.7
@@ -232,6 +244,152 @@ class AzureOpenAIProvider(LLMProvider):
             logger.error(f"Azure OpenAI API error: {e}")
             raise
 
+class OllamaProvider(LLMProvider):
+    """Ollama Local LLM Provider"""
+    
+    def __init__(self, model: str = "llama2", base_url: str = None, **kwargs):
+        if not REQUESTS_AVAILABLE:
+            raise ImportError("Requests package is not installed. Install with: pip install requests")
+        
+        super().__init__("ollama", model, **kwargs)
+        self.base_url = base_url or getattr(Config, 'OLLAMA_BASE_URL', 'http://localhost:11434')
+        
+        # Test connection to Ollama
+        self._test_connection()
+    
+    def _test_connection(self):
+        """Test if Ollama is running and accessible"""
+        try:
+            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            if response.status_code == 200:
+                logger.info(f"Ollama connection successful at {self.base_url}")
+            else:
+                logger.warning(f"Ollama responded with status {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Could not connect to Ollama at {self.base_url}: {e}")
+            # Don't raise here - allow the provider to be created but warn
+    
+    def generate(self, prompt: str, system_message: str = None, **kwargs) -> str:
+        try:
+            payload = {
+                "model": self.model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": kwargs.get('temperature', Config.TEMPERATURE),
+                    "num_predict": kwargs.get('max_tokens', Config.MAX_TOKENS)
+                }
+            }
+            
+            if system_message:
+                payload["system"] = system_message
+            
+            response = requests.post(
+                f"{self.base_url}/api/generate",
+                json=payload,
+                timeout=120  # Longer timeout for local generation
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            return result.get("response", "")
+            
+        except Exception as e:
+            logger.error(f"Ollama API error: {e}")
+            raise
+    
+    def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
+        try:
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "stream": False,
+                "options": {
+                    "temperature": kwargs.get('temperature', Config.TEMPERATURE),
+                    "num_predict": kwargs.get('max_tokens', Config.MAX_TOKENS)
+                }
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/api/chat",
+                json=payload,
+                timeout=120
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            return result.get("message", {}).get("content", "")
+            
+        except Exception as e:
+            logger.error(f"Ollama chat API error: {e}")
+            raise
+
+class LocalLLMProvider(LLMProvider):
+    """Generic Local LLM Provider for OpenAI-compatible APIs"""
+    
+    def __init__(self, model: str = "local-model", base_url: str = None, api_key: str = None, **kwargs):
+        if not REQUESTS_AVAILABLE:
+            raise ImportError("Requests package is not installed. Install with: pip install requests")
+        
+        super().__init__("local_llm", model, **kwargs)
+        self.base_url = base_url or getattr(Config, 'LOCAL_LLM_BASE_URL', 'http://localhost:8000')
+        self.api_key = api_key or getattr(Config, 'LOCAL_LLM_API_KEY', None)
+        
+        # Test connection
+        self._test_connection()
+    
+    def _test_connection(self):
+        """Test if local LLM server is running"""
+        try:
+            headers = {}
+            if self.api_key:
+                headers["Authorization"] = f"Bearer {self.api_key}"
+            
+            response = requests.get(f"{self.base_url}/v1/models", headers=headers, timeout=5)
+            if response.status_code == 200:
+                logger.info(f"Local LLM connection successful at {self.base_url}")
+            else:
+                logger.warning(f"Local LLM responded with status {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Could not connect to local LLM at {self.base_url}: {e}")
+    
+    def generate(self, prompt: str, system_message: str = None, **kwargs) -> str:
+        messages = []
+        if system_message:
+            messages.append({"role": "system", "content": system_message})
+        messages.append({"role": "user", "content": prompt})
+        
+        return self.chat(messages, **kwargs)
+    
+    def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
+        try:
+            headers = {"Content-Type": "application/json"}
+            if self.api_key:
+                headers["Authorization"] = f"Bearer {self.api_key}"
+            
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "max_tokens": kwargs.get('max_tokens', Config.MAX_TOKENS),
+                "temperature": kwargs.get('temperature', Config.TEMPERATURE),
+                "stream": False
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/v1/chat/completions",
+                json=payload,
+                headers=headers,
+                timeout=120
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            return result["choices"][0]["message"]["content"]
+            
+        except Exception as e:
+            logger.error(f"Local LLM API error: {e}")
+            raise
+
 class LLMService:
     """Main LLM Service that manages multiple providers"""
     
@@ -245,7 +403,7 @@ class LLMService:
         if OPENAI_AVAILABLE and hasattr(Config, 'OPENAI_API_KEY') and Config.OPENAI_API_KEY:
             try:
                 self.providers['openai'] = OpenAIProvider()
-                self.providers['openai_gpt4'] = OpenAIProvider(model="gpt-3.5-turbo")
+                self.providers['openai_gpt4'] = OpenAIProvider(model="gpt-4")
                 logger.info("OpenAI providers initialized successfully")
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI provider: {e}")
@@ -277,6 +435,58 @@ class LLMService:
                 logger.info("Azure OpenAI provider initialized successfully")
             except Exception as e:
                 logger.warning(f"Failed to initialize Azure OpenAI provider: {e}")
+        
+        # Ollama Provider
+        if REQUESTS_AVAILABLE:
+            try:
+                # Dynamically discover available Ollama models
+                available_models = []
+                try:
+                    ollama_url = getattr(Config, 'OLLAMA_BASE_URL', 'http://localhost:11434')
+                    response = requests.get(f"{ollama_url}/api/tags", timeout=5)
+                    if response.status_code == 200:
+                        models_data = response.json()
+                        # Keep the full model name including version tag (e.g., 'llama3:8b')
+                        available_models = [model.get('name', '') for model in models_data.get('models', [])]
+                        available_models = [m for m in available_models if m]  # Filter out empty names
+                        logger.info(f"Discovered Ollama models: {available_models}")
+                except Exception as e:
+                    logger.warning(f"Could not discover Ollama models: {e}")
+                
+                # If no models discovered, try common ones as fallback
+                if not available_models:
+                    available_models = ['llama2', 'llama3', 'codellama', 'mistral', 'neural-chat']
+                    logger.info("Using fallback model list for Ollama")
+                
+                # Try to initialize providers for available models
+                for model in available_models:
+                    try:
+                        provider = OllamaProvider(model=model)
+                        self.providers[f'ollama_{model}'] = provider
+                        logger.info(f"Ollama provider initialized successfully for model: {model}")
+                        
+                        # Use the first successfully initialized model as the default 'ollama' provider
+                        if 'ollama' not in self.providers:
+                            self.providers['ollama'] = provider
+                        
+                        break  # Stop after first successful initialization
+                    except Exception as e:
+                        logger.debug(f"Failed to initialize Ollama provider for {model}: {e}")
+                        continue
+                
+                if not any(key.startswith('ollama') for key in self.providers.keys()):
+                    logger.warning("No Ollama providers could be initialized")
+                
+            except Exception as e:
+                logger.warning(f"Failed to initialize Ollama provider: {e}")
+        
+        # Local LLM Provider (OpenAI-compatible)
+        if REQUESTS_AVAILABLE and hasattr(Config, 'LOCAL_LLM_BASE_URL'):
+            try:
+                self.providers['local_llm'] = LocalLLMProvider()
+                logger.info("Local LLM provider initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Local LLM provider: {e}")
         
         if not self.providers:
             logger.warning("No LLM providers could be initialized. Check your API keys and package installations.")

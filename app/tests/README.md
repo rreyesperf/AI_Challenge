@@ -22,6 +22,11 @@ This directory contains all tests for the travel booking application.
 - `test_hotels_standalone.py` - Standalone hotels service tests
 - `test_transportation_standalone.py` - Standalone transportation service tests
 
+### LLM Service Tests
+- `test_llm_service.py` - Unit tests for LLM service and providers (mocked)
+- `test_local_llm_api.py` - API integration tests for local LLM endpoints
+- `test_local_llm.py` - Setup and integration tests for local LLM services
+
 ### Integration Tests
 - `test_with_context.py` - Tests services within Flask app context
 - `test_final.py` - Final integration test for all services
@@ -52,6 +57,12 @@ python run_tests.py --verbose
 python test_with_context.py
 python test_final.py
 python test_flask_startup.py
+
+# Local LLM specific tests
+python test_llm_service.py                # Unit tests for LLM service
+python test_local_llm.py                  # Local LLM setup and integration
+python test_local_llm.py --unit-tests     # Unit tests only
+python test_local_llm_api.py              # API integration tests
 ```
 
 ### Run from Parent Directory

@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "AI Travel Platform API",
-    "description": "Complete API collection for the AI-powered travel platform with LLM integration",
-    "version": "2.0.0",
+    "name": "AI Travel Platform API with Local LLM",
+    "description": "Complete API collection for the AI-powered travel platform with LLM integration including local LLM support",
+    "version": "2.1.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -256,7 +256,7 @@
           "response": []
         },
         {
-          "name": "AI Chat",
+          "name": "AI Chat (OpenAI)",
           "request": {
             "method": "POST",
             "header": [
@@ -278,6 +278,50 @@
           "response": []
         },
         {
+          "name": "AI Chat (Ollama - Llama 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Plan a budget-friendly trip to Europe for 2 weeks\",\n  \"provider\": \"ollama_llama2\",\n  \"system_message\": \"You are a travel planning expert specializing in budget travel.\",\n  \"max_tokens\": 800,\n  \"temperature\": 0.8\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Chat (Local LLM)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What are some hidden gems and local experiences in Tokyo?\",\n  \"provider\": \"local_llm\",\n  \"system_message\": \"You are a local Tokyo travel guide with insider knowledge.\",\n  \"max_tokens\": 600,\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "AI Conversation",
           "request": {
             "method": "POST",
@@ -289,7 +333,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"I'm planning a trip to Europe\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"That sounds exciting! What countries are you considering?\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"I'm thinking about France and Italy\"\n    }\n  ],\n  \"provider\": \"openai\",\n  \"max_tokens\": 500,\n  \"temperature\": 0.7\n}"
+              "raw": "{\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"I'm planning a trip to Europe\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"That sounds exciting! What countries are you considering?\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"I'm thinking about France and Italy\"\n    }\n  ],\n  \"provider\": \"ollama\",\n  \"max_tokens\": 500,\n  \"temperature\": 0.7\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/ai/conversation",
@@ -300,7 +344,7 @@
           "response": []
         },
         {
-          "name": "AI Travel Agent",
+          "name": "AI Travel Agent (with Local LLM)",
           "request": {
             "method": "POST",
             "header": [
@@ -311,7 +355,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"query\": \"Plan a 7-day trip to Los Angeles including flights from New York, hotels, and transportation\",\n  \"flight_params\": {\n    \"origin\": \"New York\",\n    \"destination\": \"Los Angeles\",\n    \"departureDate\": \"2025-08-15\",\n    \"returnDate\": \"2025-08-22\"\n  },\n  \"hotel_params\": {\n    \"country\": \"USA\",\n    \"state\": \"California\",\n    \"city\": \"Los Angeles\",\n    \"arrivalDate\": \"2025-08-15\",\n    \"chekoutDate\": \"2025-08-22\"\n  },\n  \"transportation_params\": {\n    \"location\": \"Los Angeles\",\n    \"pickup\": \"LAX Airport\",\n    \"dropOff\": \"Downtown LA\",\n    \"pickUpDate\": \"2025-08-15\",\n    \"dropOffDate\": \"2025-08-22\",\n    \"pickupTime\": \"14:30\",\n    \"dropOffTime\": \"10:00\"\n  },\n  \"dining_params\": {\n    \"budget\": \"100\",\n    \"timeframe\": \"dinner\",\n    \"address\": \"Downtown Los Angeles, CA\"\n  }\n}"
+              "raw": "{\n  \"query\": \"Plan a 7-day trip to Los Angeles including flights from New York, hotels, and transportation using local AI\",\n  \"flight_params\": {\n    \"origin\": \"New York\",\n    \"destination\": \"Los Angeles\",\n    \"departureDate\": \"2025-08-15\",\n    \"returnDate\": \"2025-08-22\"\n  },\n  \"hotel_params\": {\n    \"country\": \"USA\",\n    \"state\": \"California\",\n    \"city\": \"Los Angeles\",\n    \"arrivalDate\": \"2025-08-15\",\n    \"chekoutDate\": \"2025-08-22\"\n  },\n  \"transportation_params\": {\n    \"location\": \"Los Angeles\",\n    \"pickup\": \"LAX Airport\",\n    \"dropOff\": \"Downtown LA\",\n    \"pickUpDate\": \"2025-08-15\",\n    \"dropOffDate\": \"2025-08-22\",\n    \"pickupTime\": \"14:30\",\n    \"dropOffTime\": \"10:00\"\n  },\n  \"dining_params\": {\n    \"budget\": \"100\",\n    \"timeframe\": \"dinner\",\n    \"address\": \"Downtown Los Angeles, CA\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/ai/travel-agent",
@@ -322,7 +366,7 @@
           "response": []
         },
         {
-          "name": "AI Consensus",
+          "name": "AI Consensus (Multi-Provider)",
           "request": {
             "method": "POST",
             "header": [
@@ -333,12 +377,71 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"prompt\": \"What is the best time to visit Japan for cherry blossoms?\",\n  \"providers\": [\"openai\", \"anthropic\", \"google\"]\n}"
+              "raw": "{\n  \"prompt\": \"What is the best time to visit Japan for cherry blossoms?\",\n  \"providers\": [\"openai\", \"ollama\", \"anthropic\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/ai/consensus",
               "host": ["{{base_url}}"],
               "path": ["api", "ai", "consensus"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Local LLM Testing",
+      "item": [
+        {
+          "name": "Test Ollama Connection",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:11434/api/tags",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "11434",
+              "path": ["api", "tags"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test Local LLM Connection",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/v1/models",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["v1", "models"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Direct Ollama Chat Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"llama2\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Hello, can you help me plan a trip?\"\n    }\n  ],\n  \"stream\": false\n}"
+            },
+            "url": {
+              "raw": "http://localhost:11434/api/chat",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "11434",
+              "path": ["api", "chat"]
             }
           },
           "response": []
@@ -371,7 +474,7 @@
           "response": []
         },
         {
-          "name": "RAG Query",
+          "name": "RAG Query (with Local LLM)",
           "request": {
             "method": "POST",
             "header": [
@@ -382,7 +485,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"question\": \"What are the visa requirements for traveling to Japan?\",\n  \"top_k\": 5,\n  \"provider\": \"openai\"\n}"
+              "raw": "{\n  \"question\": \"What are the visa requirements for traveling to Japan?\",\n  \"top_k\": 5,\n  \"provider\": \"ollama_llama2\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/ai/rag/query",
