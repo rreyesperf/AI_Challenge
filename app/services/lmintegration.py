@@ -170,17 +170,17 @@ def chat_service(message: str, provider: str = None, system_message: str = None,
         return {'error': 'LLM service not available'}
     
     try:
-        # Set defaults from config if available
-        if hasattr(Config, 'DEFAULT_LLM_PROVIDER'):
-            provider = provider or Config.DEFAULT_LLM_PROVIDER
+        # Set defaults from config if available (only if no provider specified)
         if hasattr(Config, 'MAX_TOKENS'):
             max_tokens = max_tokens or Config.MAX_TOKENS
         if hasattr(Config, 'TEMPERATURE'):
             temperature = temperature or Config.TEMPERATURE
             
+        # IMPORTANT: Let LLM service handle provider priority automatically
+        # Do NOT use Config.DEFAULT_LLM_PROVIDER as it bypasses the priority system
         response = llm_service.generate_response(
             prompt=message,
-            provider_name=provider,
+            provider_name=provider,  # This will be None to use priority fallback
             system_message=system_message,
             max_tokens=max_tokens,
             temperature=temperature
@@ -197,17 +197,17 @@ def chat_conversation_service(messages: List[Dict], provider: str = None,
         return {'error': 'LLM service not available'}
     
     try:
-        # Set defaults from config if available
-        if hasattr(Config, 'DEFAULT_LLM_PROVIDER'):
-            provider = provider or Config.DEFAULT_LLM_PROVIDER
+        # Set defaults from config if available (only for non-provider settings)
         if hasattr(Config, 'MAX_TOKENS'):
             max_tokens = max_tokens or Config.MAX_TOKENS
         if hasattr(Config, 'TEMPERATURE'):
             temperature = temperature or Config.TEMPERATURE
             
+        # IMPORTANT: Let LLM service handle provider priority automatically
+        # Do NOT use Config.DEFAULT_LLM_PROVIDER as it bypasses the priority system
         response = llm_service.chat_completion(
             messages=messages,
-            provider_name=provider,
+            provider_name=provider,  # This will be None to use priority fallback
             max_tokens=max_tokens,
             temperature=temperature
         )
