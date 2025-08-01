@@ -1,21 +1,25 @@
-name: Deploy to Azure Container Apps
+name: Deploy API to Azure Container Apps
 
 on:
   push:
     branches: [ main, production ]
     paths:
-      - '**'
-      - '!README.md'
-      - '!docs/**'
+      - 'app/**'
+      - '!app/UI/**'      # Exclude UI folder
+      - '!app/README.md'
+      - '!app/docs/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'app/**'
+      - '!app/UI/**'      # Exclude UI folder
 
 env:
-  AZURE_CONTAINER_REGISTRY: cr81aichallenge-hed7gqfvbbcub6az.azurecr.io  # Your ACR name
+  AZURE_CONTAINER_REGISTRY: cr81aichallenge-hed7gqfvbbcub6az.azurecr.io
   IMAGE_NAME: travel-chat-api
-  RESOURCE_GROUP_NAME: rg_grupo81  # Your resource group name
-  CONTAINER_APP_NAME: travel-chat-api-app  # Your API Container App name
-  CONTAINER_APP_ENV: travel-chat-env  # Your Container Apps environment
+  RESOURCE_GROUP_NAME: rg_grupo81
+  CONTAINER_APP_NAME: travel-chat-api-app
+  CONTAINER_APP_ENV: travel-chat-env
 
 jobs:
   build-and-test:
@@ -31,21 +35,25 @@ jobs:
         python-version: '3.11'
         
     - name: Install dependencies
+      working-directory: ./app
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-cov
         
     - name: Run unit tests
+      working-directory: ./app
       run: |
         python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing || echo "No tests found, continuing..."
         
     - name: Test Flask app startup
+      working-directory: ./app
       run: |
         export FLASK_ENV=development
         python -c "from routes import create_app; app = create_app(); print('✅ Flask app created successfully')"
         
     - name: Test LLM service initialization
+      working-directory: ./app
       run: |
         python -c "from services.llm_service import LLMService; service = LLMService(); print('✅ LLM service initialized successfully')"
         
@@ -84,7 +92,8 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: .
+        context: ./app
+        file: ./app/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -126,10 +135,8 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
             --location $(az group show --name ${{ env.RESOURCE_GROUP_NAME }} --query location -o tsv)
           echo "✅ Container Apps Environment created successfully!"
-          echo "ENV_EXISTS=created" >> $GITHUB_OUTPUT
         else
           echo "✅ Container Apps Environment '${{ env.CONTAINER_APP_ENV }}' found!"
-          echo "ENV_EXISTS=true" >> $GITHUB_OUTPUT
         fi
         
     - name: Deploy to Azure Container Apps
@@ -169,7 +176,7 @@ jobs:
         
     - name: Deployment Summary
       run: |
-        echo "🚀 Deployment completed successfully!"
+        echo "🚀 API Deployment completed successfully!"
         echo "📦 Image: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
         echo "🌐 Application URL: ${{ steps.get-url.outputs.APP_URL }}"
         echo "📊 Resource Group: ${{ env.RESOURCE_GROUP_NAME }}"
@@ -184,6 +191,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -229,7 +241,7 @@ jobs:
     - name: Notify on success
       if: success()
       run: |
-        echo "🎉 Deployment successful and validated!"
+        echo "🎉 API Deployment successful and validated!"
         echo "🌐 API is available at: ${{ steps.get-url.outputs.APP_URL }}"
         echo "📋 Available endpoints:"
         echo "  - ${{ steps.get-url.outputs.APP_URL }}/api/health"
@@ -240,7 +252,7 @@ jobs:
     - name: Notify on failure
       if: failure()
       run: |
-        echo "❌ Deployment validation failed!"
+        echo "❌ API Deployment validation failed!"
         echo "🔍 Check the logs and Container Apps status in Azure Portal"
         echo "🌐 Expected URL: ${{ steps.get-url.outputs.APP_URL }}"
         exit 1
