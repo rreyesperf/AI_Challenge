@@ -3,15 +3,19 @@ name: Deploy to Azure Container Apps
 on:
   push:
     branches: [ main, production ]
+    paths:
+      - '**'
+      - '!README.md'
+      - '!docs/**'
   pull_request:
     branches: [ main ]
 
 env:
-  REGISTRY: your-registry.azurecr.io
-  IMAGE_NAME: agentic-rag-api
-  RESOURCE_GROUP: your-resource-group
-  CONTAINER_APP_NAME: agentic-rag-api
-  CONTAINER_APP_ENV: your-container-apps-environment
+  AZURE_CONTAINER_REGISTRY: cr81aichallenge-hed7gqfvbbcub6az.azurecr.io  # Your ACR name
+  IMAGE_NAME: travel-chat-api
+  RESOURCE_GROUP_NAME: rg_grupo81  # Your resource group name
+  CONTAINER_APP_NAME: travel-chat-api-app  # Your API Container App name
+  CONTAINER_APP_ENV: travel-chat-env  # Your Container Apps environment
 
 jobs:
   build-and-test:
@@ -34,17 +38,24 @@ jobs:
         
     - name: Run unit tests
       run: |
-        python -m pytest tests/ -v --cov=. --cov-report=xml || echo "No tests found, skipping"
+        python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing || echo "No tests found, continuing..."
         
     - name: Test Flask app startup
       run: |
         export FLASK_ENV=development
-        python -c "from routes import create_app; app = create_app(); print('Flask app created successfully')"
+        python -c "from routes import create_app; app = create_app(); print('✅ Flask app created successfully')"
+        
+    - name: Test LLM service initialization
+      run: |
+        python -c "from services.llm_service import LLMService; service = LLMService(); print('✅ LLM service initialized successfully')"
         
   build-and-push:
     needs: build-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
     
     steps:
     - name: Checkout code
@@ -56,19 +67,18 @@ jobs:
     - name: Log in to Azure Container Registry
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ secrets.AZURE_CLIENT_ID }}
-        password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        registry: ${{ env.AZURE_CONTAINER_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
         
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        images: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=branch
-          type=ref,event=pr
-          type=sha
+          type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
           
     - name: Build and push Docker image
@@ -80,6 +90,14 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        platforms: linux/amd64
+        
+    - name: Image build summary
+      run: |
+        echo "🐳 Docker image built and pushed successfully!"
+        echo "Registry: ${{ env.AZURE_CONTAINER_REGISTRY }}"
+        echo "Image: ${{ env.IMAGE_NAME }}"
+        echo "Tags: ${{ steps.meta.outputs.tags }}"
         
   deploy:
     needs: build-and-push
@@ -99,17 +117,43 @@ jobs:
       uses: azure/container-apps-deploy-action@v1
       with:
         containerAppName: ${{ env.CONTAINER_APP_NAME }}
-        resourceGroup: ${{ env.RESOURCE_GROUP }}
-        imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        resourceGroup: ${{ env.RESOURCE_GROUP_NAME }}
+        imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        targetPort: 8080
+        ingress: external
         environmentVariables: |
           FLASK_ENV=production
-          SECRET_KEY=secretref:secret-key
+          PYTHONUNBUFFERED=1
+          LOG_LEVEL=INFO
+        secrets: |
+          openai-api-key=${{ secrets.OPENAI_API_KEY }}
+          anthropic-api-key=${{ secrets.ANTHROPIC_API_KEY }}
+          google-api-key=${{ secrets.GOOGLE_API_KEY }}
+          azure-openai-api-key=${{ secrets.AZURE_OPENAI_API_KEY }}
+          azure-openai-endpoint=${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          app-insights-key=${{ secrets.APP_INSIGHTS_INSTRUMENTATION_KEY }}
+        secretsEnvironmentVariables: |
           OPENAI_API_KEY=secretref:openai-api-key
           ANTHROPIC_API_KEY=secretref:anthropic-api-key
           GOOGLE_API_KEY=secretref:google-api-key
           AZURE_OPENAI_API_KEY=secretref:azure-openai-api-key
           AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint
           APP_INSIGHTS_INSTRUMENTATION_KEY=secretref:app-insights-key
+          
+    - name: Get Container App URL
+      id: get-url
+      run: |
+        APP_URL=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query "properties.configuration.ingress.fqdn" -o tsv)
+        echo "APP_URL=https://$APP_URL" >> $GITHUB_OUTPUT
+        echo "🌐 Application URL: https://$APP_URL"
+        
+    - name: Deployment Summary
+      run: |
+        echo "🚀 Deployment completed successfully!"
+        echo "📦 Image: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        echo "🌐 Application URL: ${{ steps.get-url.outputs.APP_URL }}"
+        echo "📊 Resource Group: ${{ env.RESOURCE_GROUP_NAME }}"
+        echo "🏗️ Container App: ${{ env.CONTAINER_APP_NAME }}"
           
   validate-deployment:
     needs: deploy
@@ -130,23 +174,53 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
         
-    - name: Wait for deployment
-      run: sleep 60
-      
-    - name: Run deployment validation tests
+    - name: Get Container App URL
+      id: get-url
       run: |
-        python test_deployment.py --url https://${{ env.CONTAINER_APP_NAME }}.nice-ground-12345.eastus2.azurecontainerapps.io
-      env:
-        DEPLOYMENT_URL: https://${{ env.CONTAINER_APP_NAME }}.nice-ground-12345.eastus2.azurecontainerapps.io
+        APP_URL=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query "properties.configuration.ingress.fqdn" -o tsv)
+        echo "APP_URL=https://$APP_URL" >> $GITHUB_OUTPUT
+        
+    - name: Wait for deployment to stabilize
+      run: |
+        echo "⏳ Waiting for deployment to stabilize..."
+        sleep 120
+      
+    - name: Health Check
+      run: |
+        echo "🏥 Running health check..."
+        curl -f "${{ steps.get-url.outputs.APP_URL }}/api/health" || exit 1
+        echo "✅ Health check passed!"
+        
+    - name: API Endpoint Test
+      run: |
+        echo "🧪 Testing API endpoints..."
+        
+        # Test health endpoint
+        curl -f "${{ steps.get-url.outputs.APP_URL }}/api/health"
+        
+        # Test AI health endpoint
+        curl -f "${{ steps.get-url.outputs.APP_URL }}/api/ai/health"
+        
+        # Test providers endpoint
+        curl -f "${{ steps.get-url.outputs.APP_URL }}/api/ai/providers"
+        
+        echo "✅ All API endpoints responding correctly!"
         
     - name: Notify on success
       if: success()
       run: |
         echo "🎉 Deployment successful and validated!"
-        echo "API is available at: https://${{ env.CONTAINER_APP_NAME }}.nice-ground-12345.eastus2.azurecontainerapps.io"
+        echo "🌐 API is available at: ${{ steps.get-url.outputs.APP_URL }}"
+        echo "📋 Available endpoints:"
+        echo "  - ${{ steps.get-url.outputs.APP_URL }}/api/health"
+        echo "  - ${{ steps.get-url.outputs.APP_URL }}/api/ai/chat"
+        echo "  - ${{ steps.get-url.outputs.APP_URL }}/api/ai/health"
+        echo "  - ${{ steps.get-url.outputs.APP_URL }}/api/ai/providers"
         
     - name: Notify on failure
       if: failure()
       run: |
         echo "❌ Deployment validation failed!"
-        echo "Check the logs and Container Apps status in Azure Portal"
+        echo "🔍 Check the logs and Container Apps status in Azure Portal"
+        echo "🌐 Expected URL: ${{ steps.get-url.outputs.APP_URL }}"
+        exit 1

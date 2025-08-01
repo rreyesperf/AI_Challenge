@@ -27,10 +27,10 @@ on:
 
 # Environment variables for the workflow
 env:
-  AZURE_CONTAINER_REGISTRY: travelchatui.azurecr.io  # Replace with your ACR name
+  AZURE_CONTAINER_REGISTRY: cr81aichallenge-hed7gqfvbbcub6az.azurecr.io  # Your ACR name
   IMAGE_NAME: travel-chat-ui
-  CONTAINER_APP_NAME: travel-chat-ui-app  # Replace with your Container App name
-  RESOURCE_GROUP_NAME: travel-chat-rg  # Replace with your resource group name
+  CONTAINER_APP_NAME: travel-chat-ui-app  # Your Container App name
+  RESOURCE_GROUP_NAME: rg_grupo81  # Your resource group name
   WORKING_DIRECTORY: ./UI
 
 # Define jobs

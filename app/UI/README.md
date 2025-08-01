@@ -43,7 +43,9 @@ The application will open at `http://localhost:3000`
 - **styled-components 6.1.13**: CSS-in-JS styling
 - **framer-motion 11.5.4**: Smooth animations and transitions
 - **axios 1.7.7**: Secure API communication
-- **Comprehensive Testing**: Jest + React Testing Library
+- **Comprehensive Testing**: Jest + React Testing Library (5 test suites)
+- **Docker Support**: Multi-stage containerization for Azure deployment
+- **CI/CD Pipeline**: GitHub Actions for automated deployment
 
 ## 🛡️ Security
 
@@ -67,9 +69,19 @@ UI/
 │   ├── utils/               # Utilities and contexts
 │   │   ├── AuthContext.js   # Authentication state management
 │   │   └── api.js           # API communication layer
+│   ├── tests/               # Test files (Jest + React Testing Library)
+│   │   ├── App.test.js      # App component tests
+│   │   ├── api.test.js      # API utility tests
+│   │   ├── ChatMessage.test.js # Chat message component tests
+│   │   ├── Login.test.js    # Login page tests
+│   │   └── TypingIndicator.test.js # Typing indicator component tests
 │   ├── App.js               # Main application component
-│   └── index.js             # Application entry point
+│   ├── index.js             # Application entry point
+│   └── setupTests.js        # Test configuration
+├── .github/workflows/       # GitHub Actions for CI/CD
 ├── public/                  # Static assets
+├── Dockerfile              # Container configuration for Azure deployment
+├── .dockerignore           # Docker build optimization
 ├── package.json             # Dependencies and scripts
 └── README.md               # This file
 ```
@@ -93,6 +105,24 @@ npm run build
 # Preview production build locally
 npx serve -s build
 ```
+
+### Docker Deployment
+The UI includes Docker support for containerized deployment:
+
+```powershell
+# Build Docker image
+docker build -t travel-chat-ui .
+
+# Run container locally
+docker run -p 8080:8080 travel-chat-ui
+```
+
+### Azure Container Apps Deployment
+Automated deployment to Azure Container Apps is configured via GitHub Actions:
+- **Automatic deployment** on commits to main/production branches
+- **Multi-stage Docker build** optimized for production
+- **Health checks** and validation included
+- See `AZURE_DEPLOYMENT_SETUP.md` for detailed setup instructions
 
 ## 🌐 API Integration
 
@@ -185,14 +215,24 @@ npm install
 - **Safari**: 14+
 - **Edge**: 90+
 
+## 📚 Additional Documentation
+
+For detailed information about specific aspects of the UI:
+
+- **`AZURE_DEPLOYMENT_SETUP.md`** - Complete Azure Container Apps deployment guide
+- **`DEPLOYMENT_SUMMARY.md`** - Overview of Docker and GitHub Actions configuration  
+- **`DOCKERFILE`** - Multi-stage container configuration for production deployment
+- **`.github/workflows/deploy-ui.yml`** - Automated CI/CD pipeline configuration
+
 ## 🤝 Contributing
 
 ### Development Workflow
 1. Create feature branch from main
 2. Make changes with comprehensive tests
-3. Run security audit: `npm audit`
-4. Ensure build passes: `npm run build`
-5. Submit pull request with detailed description
+3. Add tests to `src/tests/` folder following existing naming patterns
+4. Run security audit: `npm audit`
+5. Ensure build passes: `npm run build`
+6. Submit pull request with detailed description
 
 ### Code Standards
 - ESLint configuration for consistent formatting
@@ -204,5 +244,11 @@ npm install
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: July 31, 2025  
+**Last Updated**: August 1, 2025  
 **Status**: Production Ready ✅
+
+### Recent Updates
+- ✅ **Azure Container Apps deployment** configured with GitHub Actions
+- ✅ **Docker containerization** with multi-stage optimization
+- ✅ **Test structure cleanup** - organized all tests in `/src` following React conventions
+- ✅ **Production-ready** Dockerfile with health checks and security optimizations
