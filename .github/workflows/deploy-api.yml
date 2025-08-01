@@ -1,6 +1,21 @@
 name: Deploy API to Azure Container Apps
 
 on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+        - main
+        - production
+      skip_tests:
+        description: 'Skip tests during manual deployment'
+        required: false
+        default: false
+        type: boolean  
   push:
     branches: [ main, production ]
     paths:
