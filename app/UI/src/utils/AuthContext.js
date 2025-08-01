@@ -31,35 +31,126 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  // Security utility functions
+  const sanitizeInput = (input) => {
+    if (typeof input !== 'string') return '';
+    
+    // Remove potentially dangerous characters while preserving valid password chars
+    // Allow alphanumeric, spaces, and common password special characters
+    return input.replace(/[<>\"'&\x00-\x1f\x7f-\x9f]/g, '');
+  };
+
+  const secureCompare = (input, expected) => {
+    // Normalize both strings to handle encoding issues
+    const normalizedInput = String(input || '').normalize('NFC');
+    const normalizedExpected = String(expected || '').normalize('NFC');
+    
+    // Use constant-time comparison to prevent timing attacks
+    if (normalizedInput.length !== normalizedExpected.length) {
+      return false;
+    }
+    
+    let result = 0;
+    for (let i = 0; i < normalizedInput.length; i++) {
+      result |= normalizedInput.charCodeAt(i) ^ normalizedExpected.charCodeAt(i);
+    }
+    
+    return result === 0;
+  };
+
   const login = (username, password) => {
-    // Get credentials from environment variables
-    const validUsername = process.env.REACT_APP_AUTH_USERNAME;
-    const validPassword = process.env.REACT_APP_AUTH_PASSWORD;
-    
-    // Check if environment variables are configured
-    if (!validUsername || !validPassword) {
-      return { success: false, error: 'Authentication not configured. Please contact administrator.' };
-    }
-    
-    if (!username || !password) {
-      return { success: false, error: 'Please enter both username and password' };
-    }
-    
-    if (username === validUsername && password === validPassword) {
-      const userData = {
-        username,
-        id: Date.now().toString(),
-        loginTime: new Date().toISOString()
-      };
+    try {
+      // Get credentials from environment variables
+      const validUsername = process.env.REACT_APP_AUTH_USERNAME;
+      const validPassword = process.env.REACT_APP_AUTH_PASSWORD;
       
-      setUser(userData);
-      setIsAuthenticated(true);
-      localStorage.setItem('chatUser', JSON.stringify(userData));
+      // Debug logging (remove in production)
+      if (process.env.REACT_APP_DEBUG_MODE === 'true') {
+        console.log('Auth Debug - Environment variables loaded:', {
+          hasUsername: !!validUsername,
+          hasPassword: !!validPassword,
+          usernameLength: validUsername?.length || 0,
+          passwordLength: validPassword?.length || 0
+        });
+      }
       
-      return { success: true };
+      // Check if environment variables are configured
+      if (!validUsername || !validPassword) {
+        return { success: false, error: 'Authentication not configured. Please contact administrator.' };
+      }
+      
+      // Validate input presence
+      if (!username || !password) {
+        return { success: false, error: 'Please enter both username and password' };
+      }
+      
+      // Sanitize inputs to prevent injection attacks
+      const sanitizedUsername = sanitizeInput(username.trim());
+      const sanitizedPassword = sanitizeInput(password);
+      
+      // Debug logging
+      if (process.env.REACT_APP_DEBUG_MODE === 'true') {
+        console.log('Auth Debug - Input processing:', {
+          originalUsername: username,
+          sanitizedUsername: sanitizedUsername,
+          originalPasswordLength: password.length,
+          sanitizedPasswordLength: sanitizedPassword.length,
+          passwordChanged: password !== sanitizedPassword
+        });
+      }
+      
+      // Additional validation
+      if (sanitizedUsername.length === 0 || sanitizedPassword.length === 0) {
+        return { success: false, error: 'Invalid characters in credentials' };
+      }
+      
+      // Rate limiting check (simple implementation)
+      const now = Date.now();
+      const lastAttempt = localStorage.getItem('lastLoginAttempt');
+      if (lastAttempt && (now - parseInt(lastAttempt)) < 1000) {
+        return { success: false, error: 'Please wait before trying again' };
+      }
+      localStorage.setItem('lastLoginAttempt', now.toString());
+      
+      // Secure comparison
+      const usernameValid = secureCompare(sanitizedUsername, validUsername);
+      const passwordValid = secureCompare(sanitizedPassword, validPassword);
+      
+      // Debug logging
+      if (process.env.REACT_APP_DEBUG_MODE === 'true') {
+        console.log('Auth Debug - Comparison results:', {
+          usernameValid,
+          passwordValid,
+          inputUsernameLength: sanitizedUsername.length,
+          expectedUsernameLength: validUsername.length,
+          inputPasswordLength: sanitizedPassword.length,
+          expectedPasswordLength: validPassword.length
+        });
+      }
+      
+      if (usernameValid && passwordValid) {
+        // Clear failed attempts on success
+        localStorage.removeItem('lastLoginAttempt');
+        
+        const userData = {
+          username: sanitizedUsername, // Store sanitized version
+          id: Date.now().toString(),
+          loginTime: new Date().toISOString()
+        };
+        
+        setUser(userData);
+        setIsAuthenticated(true);
+        localStorage.setItem('chatUser', JSON.stringify(userData));
+        
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Invalid username or password' };
+      
+    } catch (error) {
+      console.error('Authentication error:', error);
+      return { success: false, error: 'Authentication failed. Please try again.' };
     }
-    
-    return { success: false, error: 'Invalid username or password' };
   };
 
   const logout = () => {

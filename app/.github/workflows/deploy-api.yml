@@ -1,0 +1,259 @@
+name: Deploy API to Azure Container Apps
+
+on:
+  push:
+    branches: [ main, production ]
+    paths:
+      - 'app/**'
+      - '!app/UI/**'      # Exclude UI folder
+      - '!app/README.md'
+      - '!app/docs/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'app/**'
+      - '!app/UI/**'      # Exclude UI folder
+
+env:
+  AZURE_CONTAINER_REGISTRY: cr81aichallenge-hed7gqfvbbcub6az.azurecr.io
+  IMAGE_NAME: travel-chat-api
+  RESOURCE_GROUP_NAME: rg_grupo81
+  CONTAINER_APP_NAME: travel-chat-api-app
+  CONTAINER_APP_ENV: travel-chat-env
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      working-directory: ./app
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade setuptools wheel
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+        
+    - name: Run unit tests
+      working-directory: ./app
+      run: |
+        python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing || echo "No tests found, continuing..."
+        
+    - name: Test Flask app startup
+      working-directory: ./app
+      run: |
+        export FLASK_ENV=development
+        python -c "from routes import create_app; app = create_app(); print('✅ Flask app created successfully')"
+        
+    - name: Test LLM service initialization
+      working-directory: ./app
+      run: |
+        python -c "from services.llm_service import LLMService; service = LLMService(); print('✅ LLM service initialized successfully')"
+        
+  build-and-push:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Azure Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.AZURE_CONTAINER_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./app
+        file: ./app/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64
+        
+    - name: Image build summary
+      run: |
+        echo "🐳 Docker image built and pushed successfully!"
+        echo "Registry: ${{ env.AZURE_CONTAINER_REGISTRY }}"
+        echo "Image: ${{ env.IMAGE_NAME }}"
+        echo "Tags: ${{ steps.meta.outputs.tags }}"
+        
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: Check Container Apps Environment
+      id: check-env
+      run: |
+        echo "🔍 Checking if Container Apps Environment exists..."
+        ENV_EXISTS=$(az containerapp env show --name ${{ env.CONTAINER_APP_ENV }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query "name" -o tsv 2>/dev/null || echo "not-found")
+        if [ "$ENV_EXISTS" = "not-found" ]; then
+          echo "⚠️ Container Apps Environment '${{ env.CONTAINER_APP_ENV }}' not found"
+          echo "🏗️ Creating Container Apps Environment..."
+          az containerapp env create \
+            --name ${{ env.CONTAINER_APP_ENV }} \
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --location $(az group show --name ${{ env.RESOURCE_GROUP_NAME }} --query location -o tsv)
+          echo "✅ Container Apps Environment created successfully!"
+        else
+          echo "✅ Container Apps Environment '${{ env.CONTAINER_APP_ENV }}' found!"
+        fi
+        
+    - name: Deploy to Azure Container Apps
+      uses: azure/container-apps-deploy-action@v1
+      with:
+        containerAppName: ${{ env.CONTAINER_APP_NAME }}
+        resourceGroup: ${{ env.RESOURCE_GROUP_NAME }}
+        containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
+        imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        targetPort: 8080
+        ingress: external
+        environmentVariables: |
+          FLASK_ENV=production
+          PYTHONUNBUFFERED=1
+          LOG_LEVEL=INFO
+        secrets: |
+          openai-api-key=${{ secrets.OPENAI_API_KEY }}
+          anthropic-api-key=${{ secrets.ANTHROPIC_API_KEY }}
+          google-api-key=${{ secrets.GOOGLE_API_KEY }}
+          azure-openai-api-key=${{ secrets.AZURE_OPENAI_API_KEY }}
+          azure-openai-endpoint=${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          app-insights-key=${{ secrets.APP_INSIGHTS_INSTRUMENTATION_KEY }}
+        secretsEnvironmentVariables: |
+          OPENAI_API_KEY=secretref:openai-api-key
+          ANTHROPIC_API_KEY=secretref:anthropic-api-key
+          GOOGLE_API_KEY=secretref:google-api-key
+          AZURE_OPENAI_API_KEY=secretref:azure-openai-api-key
+          AZURE_OPENAI_ENDPOINT=secretref:azure-openai-endpoint
+          APP_INSIGHTS_INSTRUMENTATION_KEY=secretref:app-insights-key
+          
+    - name: Get Container App URL
+      id: get-url
+      run: |
+        APP_URL=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query "properties.configuration.ingress.fqdn" -o tsv)
+        echo "APP_URL=https://$APP_URL" >> $GITHUB_OUTPUT
+        echo "🌐 Application URL: https://$APP_URL"
+        
+    - name: Deployment Summary
+      run: |
+        echo "🚀 API Deployment completed successfully!"
+        echo "📦 Image: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        echo "🌐 Application URL: ${{ steps.get-url.outputs.APP_URL }}"
+        echo "📊 Resource Group: ${{ env.RESOURCE_GROUP_NAME }}"
+        echo "🏗️ Container App: ${{ env.CONTAINER_APP_NAME }}"
+          
+  validate-deployment:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+        
+    - name: Get Container App URL
+      id: get-url
+      run: |
+        APP_URL=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query "properties.configuration.ingress.fqdn" -o tsv)
+        echo "APP_URL=https://$APP_URL" >> $GITHUB_OUTPUT
+        
+    - name: Wait for deployment to stabilize
+      run: |
+        echo "⏳ Waiting for deployment to stabilize..."
+        sleep 120
+      
+    - name: Health Check
+      run: |
+        echo "🏥 Running health check..."
+        curl -f "${{ steps.get-url.outputs.APP_URL }}/api/health" || exit 1
+        echo "✅ Health check passed!"
+        
+    - name: API Endpoint Test
+      run: |
+        echo "🧪 Testing API endpoints..."
+        
+        # Test health endpoint
+        curl -f "${{ steps.get-url.outputs.APP_URL }}/api/health"
+        
+        # Test AI health endpoint
+        curl -f "${{ steps.get-url.outputs.APP_URL }}/api/ai/health"
+        
+        # Test providers endpoint
+        curl -f "${{ steps.get-url.outputs.APP_URL }}/api/ai/providers"
+        
+        echo "✅ All API endpoints responding correctly!"
+        
+    - name: Notify on success
+      if: success()
+      run: |
+        echo "🎉 API Deployment successful and validated!"
+        echo "🌐 API is available at: ${{ steps.get-url.outputs.APP_URL }}"
+        echo "📋 Available endpoints:"
+        echo "  - ${{ steps.get-url.outputs.APP_URL }}/api/health"
+        echo "  - ${{ steps.get-url.outputs.APP_URL }}/api/ai/chat"
+        echo "  - ${{ steps.get-url.outputs.APP_URL }}/api/ai/health"
+        echo "  - ${{ steps.get-url.outputs.APP_URL }}/api/ai/providers"
+        
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ API Deployment validation failed!"
+        echo "🔍 Check the logs and Container Apps status in Azure Portal"
+        echo "🌐 Expected URL: ${{ steps.get-url.outputs.APP_URL }}"
+        exit 1

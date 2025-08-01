@@ -1,0 +1,233 @@
+{
+  "info": {
+    "name": "Agentic RAG API with Enhanced Conversational Travel Assistant",
+    "description": "Enhanced conversational travel assistant with agentic AI capabilities and RAG integration",
+    "version": "3.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Root Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "General Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ai/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Services",
+      "item": [
+        {
+          "name": "List AI Providers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ai/providers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "providers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enhanced AI Chat - Simple Travel Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"I want to plan a trip to Tokyo. Can you help me find flights, hotels, and dining options?\",\n  \"provider\": \"openai\",\n  \"system_message\": \"You are a helpful travel assistant that can search for flights, hotels, transportation, and dining options.\",\n  \"max_tokens\": 1000,\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enhanced AI Chat - With Conversation History",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Actually, I prefer budget options under $100 per night for hotels\",\n  \"conversation_history\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"I want to plan a trip to Tokyo. Can you help me find flights, hotels, and dining options?\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"I'd be happy to help you plan your trip to Tokyo! Let me search for options for you...\"\n    }\n  ],\n  \"provider\": \"openai\",\n  \"max_tokens\": 1000,\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enhanced AI Chat - Ollama Local LLM",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Plan a 7-day budget trip to Europe including flights from New York, accommodations, and local transportation\",\n  \"provider\": \"ollama\",\n  \"system_message\": \"You are a travel planning expert specializing in budget travel and local experiences.\",\n  \"max_tokens\": 1500,\n  \"temperature\": 0.8\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enhanced AI Chat - Flight Search Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Find me flights from New York to Los Angeles departing August 15th and returning August 22nd\",\n  \"provider\": \"openai\",\n  \"system_message\": \"You are a travel assistant that can search for and recommend travel options including flights, hotels, transportation, and dining.\",\n  \"max_tokens\": 800,\n  \"temperature\": 0.6\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enhanced AI Chat - Hotel Search Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"I need a hotel in Los Angeles from August 15-22, preferably near downtown with a budget of $200 per night\",\n  \"provider\": \"openai\",\n  \"system_message\": \"You are a travel assistant that can search for and recommend travel options including flights, hotels, transportation, and dining.\",\n  \"max_tokens\": 800,\n  \"temperature\": 0.6\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enhanced AI Chat - Dining Recommendations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What are some good restaurants in downtown Los Angeles for dinner with a budget of $150 for two people?\",\n  \"provider\": \"openai\",\n  \"system_message\": \"You are a travel assistant that can search for and recommend travel options including flights, hotels, transportation, and dining.\",\n  \"max_tokens\": 800,\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enhanced AI Chat - Transportation Options",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"I need transportation from LAX Airport to downtown Los Angeles on August 15th at 2:30 PM. What are my options?\",\n  \"provider\": \"openai\",\n  \"system_message\": \"You are a travel assistant that can search for and recommend travel options including flights, hotels, transportation, and dining.\",\n  \"max_tokens\": 800,\n  \"temperature\": 0.6\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "chat"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
