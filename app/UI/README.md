@@ -34,15 +34,15 @@ The application will open at `http://localhost:3000`
 
 2. **Edit `.env.local`** with your credentials:
    ```bash
-   REACT_APP_AUTH_USERNAME=AvidTraveler
-   REACT_APP_AUTH_PASSWORD=y8FSGatspR#KLi$qE4Sm
+   REACT_APP_AUTH_USERNAME=your_user
+   REACT_APP_AUTH_PASSWORD=your_password
    ```
 
 #### For Docker Builds:
 Use build arguments to pass credentials:
 ```bash
-docker build --build-arg REACT_APP_AUTH_USERNAME=AvidTraveler \
-             --build-arg REACT_APP_AUTH_PASSWORD=y8FSGatspR#KLi$qE4Sm \
+docker build --build-arg REACT_APP_AUTH_USERNAME=your_user \
+             --build-arg REACT_APP_AUTH_PASSWORD=your_password \
              --build-arg REACT_APP_API_URL=https://your-api-url.com \
              -t travel-chat-ui .
 ```
@@ -50,13 +50,13 @@ docker build --build-arg REACT_APP_AUTH_USERNAME=AvidTraveler \
 #### For Production Deployment:
 Credentials are automatically injected via GitHub Secrets during CI/CD deployment.
    ```
-   REACT_APP_AUTH_USERNAME=AvidTraveler
-   REACT_APP_AUTH_PASSWORD=y8FSGatspR#KLi$qE4Sm
+   REACT_APP_AUTH_USERNAME=your_user
+   REACT_APP_AUTH_PASSWORD=your_password
    ```
 
 ### Default Login
-- **Username**: `AvidTraveler`
-- **Password**: `y8FSGatspR#KLi$qE4Sm`
+- **Username**: `your_user`
+- **Password**: `your_password`
 
 > 💡 **Security Note**: Credentials are stored in `.env.local` which is not committed to the repository.
 

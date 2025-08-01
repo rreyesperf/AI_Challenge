@@ -58,8 +58,8 @@ This project uses GitHub Actions for automated deployment to Azure Container App
 - **UI Deployment** - Triggers on changes to `app/UI/**`
 
 **Azure Resources:**
-- Registry: `cr81aichallenge-hed7gqfvbbcub6az.azurecr.io`
-- Resource Group: `rg_grupo81`
+- Registry: `registry`
+- Resource Group: `resource_group`
 - API App: `travel-chat-api-app`
 - UI App: `travel-chat-ui-app`
 

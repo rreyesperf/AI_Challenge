@@ -6,10 +6,10 @@ The UI deployment workflow requires the following GitHub Secrets to be configure
 
 ### Authentication Credentials
 - **`UI_AUTH_USERNAME`**: The username for UI login
-  - Value: `AvidTraveler`
+  - Value: `your_user`
   
 - **`UI_AUTH_PASSWORD`**: The password for UI login  
-  - Value: `y8FSGatspR#KLi$qE4Sm`
+  - Value: `your_password`
 
 ### Azure Deployment
 - **`AZURE_CREDENTIALS`**: Azure service principal credentials (JSON format)
