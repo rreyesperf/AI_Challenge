@@ -113,11 +113,31 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
         
+    - name: Check Container Apps Environment
+      id: check-env
+      run: |
+        echo "🔍 Checking if Container Apps Environment exists..."
+        ENV_EXISTS=$(az containerapp env show --name ${{ env.CONTAINER_APP_ENV }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --query "name" -o tsv 2>/dev/null || echo "not-found")
+        if [ "$ENV_EXISTS" = "not-found" ]; then
+          echo "⚠️ Container Apps Environment '${{ env.CONTAINER_APP_ENV }}' not found"
+          echo "🏗️ Creating Container Apps Environment..."
+          az containerapp env create \
+            --name ${{ env.CONTAINER_APP_ENV }} \
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --location $(az group show --name ${{ env.RESOURCE_GROUP_NAME }} --query location -o tsv)
+          echo "✅ Container Apps Environment created successfully!"
+          echo "ENV_EXISTS=created" >> $GITHUB_OUTPUT
+        else
+          echo "✅ Container Apps Environment '${{ env.CONTAINER_APP_ENV }}' found!"
+          echo "ENV_EXISTS=true" >> $GITHUB_OUTPUT
+        fi
+        
     - name: Deploy to Azure Container Apps
       uses: azure/container-apps-deploy-action@v1
       with:
         containerAppName: ${{ env.CONTAINER_APP_NAME }}
         resourceGroup: ${{ env.RESOURCE_GROUP_NAME }}
+        containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
         imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         targetPort: 8080
         ingress: external
