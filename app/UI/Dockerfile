@@ -4,6 +4,11 @@
 # Stage 1: Build the React application
 FROM node:18-alpine AS builder
 
+# Build arguments for environment variables
+ARG REACT_APP_AUTH_USERNAME
+ARG REACT_APP_AUTH_PASSWORD
+ARG REACT_APP_API_URL
+
 # Set working directory
 WORKDIR /app
 
@@ -18,7 +23,7 @@ RUN npm ci --only=production --silent
 COPY . .
 
 # Build the React application for production
-# This creates an optimized production build in the /build directory
+# Environment variables are embedded during build
 RUN npm run build
 
 # Stage 2: Serve the built application with Nginx

@@ -32,8 +32,20 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (username, password) => {
-    // Simple authentication - in a real app, this would call an API
-    if (username && password) {
+    // Get credentials from environment variables
+    const validUsername = process.env.REACT_APP_AUTH_USERNAME;
+    const validPassword = process.env.REACT_APP_AUTH_PASSWORD;
+    
+    // Check if environment variables are configured
+    if (!validUsername || !validPassword) {
+      return { success: false, error: 'Authentication not configured. Please contact administrator.' };
+    }
+    
+    if (!username || !password) {
+      return { success: false, error: 'Please enter both username and password' };
+    }
+    
+    if (username === validUsername && password === validPassword) {
       const userData = {
         username,
         id: Date.now().toString(),
@@ -47,7 +59,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     }
     
-    return { success: false, error: 'Please enter both username and password' };
+    return { success: false, error: 'Invalid username or password' };
   };
 
   const logout = () => {

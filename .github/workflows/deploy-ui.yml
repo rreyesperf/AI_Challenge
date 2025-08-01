@@ -112,6 +112,10 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64
+        build-args: |
+          REACT_APP_AUTH_USERNAME=${{ secrets.UI_AUTH_USERNAME }}
+          REACT_APP_AUTH_PASSWORD=${{ secrets.UI_AUTH_PASSWORD }}
+          REACT_APP_API_URL=https://travel-chat-api-app.redwater-9f43b1af.eastus.azurecontainerapps.io
         
     - name: 📋 Image build summary
       run: |

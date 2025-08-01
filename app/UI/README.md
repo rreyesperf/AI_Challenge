@@ -24,9 +24,41 @@ npm start
 
 The application will open at `http://localhost:3000`
 
+### Authentication Setup
+
+#### For Local Development:
+1. **Copy the development template**:
+   ```bash
+   cp .env.development.template .env.local
+   ```
+
+2. **Edit `.env.local`** with your credentials:
+   ```bash
+   REACT_APP_AUTH_USERNAME=AvidTraveler
+   REACT_APP_AUTH_PASSWORD=y8FSGatspR#KLi$qE4Sm
+   ```
+
+#### For Docker Builds:
+Use build arguments to pass credentials:
+```bash
+docker build --build-arg REACT_APP_AUTH_USERNAME=AvidTraveler \
+             --build-arg REACT_APP_AUTH_PASSWORD=y8FSGatspR#KLi$qE4Sm \
+             --build-arg REACT_APP_API_URL=https://your-api-url.com \
+             -t travel-chat-ui .
+```
+
+#### For Production Deployment:
+Credentials are automatically injected via GitHub Secrets during CI/CD deployment.
+   ```
+   REACT_APP_AUTH_USERNAME=AvidTraveler
+   REACT_APP_AUTH_PASSWORD=y8FSGatspR#KLi$qE4Sm
+   ```
+
 ### Default Login
-- **Username**: `admin` (or any username)
-- **Password**: `password` (or any password)
+- **Username**: `AvidTraveler`
+- **Password**: `y8FSGatspR#KLi$qE4Sm`
+
+> 💡 **Security Note**: Credentials are stored in `.env.local` which is not committed to the repository.
 
 ## 📱 Features
 
