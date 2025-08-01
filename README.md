@@ -124,7 +124,8 @@ Import `Postman/travel_collection.json` for API testing.
 ## 📚 Documentation
 
 - [Deployment Guide](docs/deployment/DEPLOYMENT.md) - Complete deployment setup
-- [API Documentation](app/README.md) - Python Flask API details
+- [API Documentation](app/AGENTIC_API_DOCS.md) - Python Flask API reference
+- [API README](app/README.md) - API development guide
 - [UI Documentation](app/UI/README.md) - React UI details
 
 ## 🏥 Health Checks
