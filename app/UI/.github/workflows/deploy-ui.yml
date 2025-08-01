@@ -1,0 +1,232 @@
+name: Deploy React UI to Azure Container Apps
+
+# Trigger deployment on commits to main/production branches and manual dispatch
+on:
+  push:
+    branches: 
+      - main
+      - production
+    paths:
+      - 'UI/**'  # Only trigger when UI folder changes
+  pull_request:
+    branches: 
+      - main
+      - production
+    paths:
+      - 'UI/**'
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+# Environment variables for the workflow
+env:
+  AZURE_CONTAINER_REGISTRY: travelchatui.azurecr.io  # Replace with your ACR name
+  IMAGE_NAME: travel-chat-ui
+  CONTAINER_APP_NAME: travel-chat-ui-app  # Replace with your Container App name
+  RESOURCE_GROUP_NAME: travel-chat-rg  # Replace with your resource group name
+  WORKING_DIRECTORY: ./UI
+
+# Define jobs
+jobs:
+  # Job 1: Build and test the React application
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    
+    steps:
+    - name: 🛒 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: UI/package-lock.json
+
+    - name: 📦 Install dependencies
+      run: |
+        npm ci --silent
+
+    - name: 🧪 Run tests
+      run: |
+        npm test -- --coverage --watchAll=false --ci
+
+    - name: 🔨 Build React application
+      env:
+        REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+        CI: false  # Treat warnings as warnings, not errors
+      run: |
+        npm run build
+
+    - name: 📁 Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: react-build
+        path: UI/build/
+        retention-days: 7
+
+  # Job 2: Build and push Docker image (only on main/production)
+  build-and-push-image:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - name: 🛒 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔑 Login to Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.AZURE_CONTAINER_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
+    - name: 🏷️ Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: 🔨 Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: ./UI
+        file: ./UI/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: 📊 Generate build summary
+      run: |
+        echo "## 🚀 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "**Image:** \`${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Tags:** ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+
+  # Job 3: Deploy to Azure Container Apps
+  deploy-to-azure:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deploy.outputs.app-url }}
+    
+    steps:
+    - name: 🛒 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔑 Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 🚀 Deploy to Azure Container Apps
+      id: deploy
+      uses: azure/container-apps-deploy-action@v1
+      with:
+        resource-group: ${{ env.RESOURCE_GROUP_NAME }}
+        container-app-name: ${{ env.CONTAINER_APP_NAME }}
+        image: ${{ needs.build-and-push-image.outputs.image-tag }}
+        environment-variables: |
+          REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
+
+    - name: 🔍 Get Container App URL
+      id: get-url
+      run: |
+        APP_URL=$(az containerapp show \
+          --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --query "properties.configuration.ingress.fqdn" \
+          --output tsv)
+        echo "app-url=https://$APP_URL" >> $GITHUB_OUTPUT
+        echo "App URL: https://$APP_URL"
+
+  # Job 4: Post-deployment validation
+  validate-deployment:
+    needs: [deploy-to-azure]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔍 Health Check
+      run: |
+        APP_URL="${{ needs.deploy-to-azure.outputs.app-url }}"
+        echo "Validating deployment at: $APP_URL"
+        
+        # Wait for deployment to be ready
+        sleep 30
+        
+        # Health check
+        if curl -f "$APP_URL/health" --max-time 30; then
+          echo "✅ Health check passed"
+        else
+          echo "❌ Health check failed"
+          exit 1
+        fi
+        
+        # Basic functionality test
+        if curl -f "$APP_URL" --max-time 30 | grep -q "Travel Chat Assistant"; then
+          echo "✅ Application is serving content correctly"
+        else
+          echo "❌ Application content validation failed"
+          exit 1
+        fi
+
+    - name: 📊 Generate deployment summary
+      run: |
+        echo "## 🎉 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+        echo "**App URL:** ${{ needs.deploy-to-azure.outputs.app-url }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ✅ Successfully deployed and validated" >> $GITHUB_STEP_SUMMARY
+        echo "**Deployed at:** $(date)" >> $GITHUB_STEP_SUMMARY
+
+  # Job 5: Cleanup on failure
+  cleanup-on-failure:
+    needs: [build-and-push-image, deploy-to-azure, validate-deployment]
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+    - name: 🔑 Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: 🧹 Rollback on failure (optional)
+      run: |
+        echo "⚠️ Deployment failed. Consider implementing rollback logic here."
+        echo "Current image that failed: ${{ needs.build-and-push-image.outputs.image-tag }}"
+        # Add rollback logic if needed
+        
+    - name: 📧 Notify on failure
+      if: failure()
+      run: |
+        echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+        echo "**Failed at:** $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Check the logs for details.**" >> $GITHUB_STEP_SUMMARY

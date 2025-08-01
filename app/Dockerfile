@@ -4,10 +4,11 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for potential ML packages
+# Install system dependencies for potential ML packages and Azure compatibility
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better Docker layer caching
@@ -20,13 +21,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY . .
 
-# Create non-root user for security
+# Create non-root user for security (Azure Container Apps requirement)
 RUN adduser --disabled-password --gecos '' --uid 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
 # Set environment variables for production
-ENV FLASK_APP=routes:app
+ENV FLASK_APP=startup:app
 ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
@@ -35,12 +36,12 @@ ENV PYTHONUNBUFFERED=1
 RUN mkdir -p /app/data/chroma && \
     chmod 755 /app/data
 
-# Expose port (Azure Container Apps will map this to 443)
+# Azure Container Apps uses port 8080 internally and maps to 443 externally
 EXPOSE 8080
 
-# Health check for container orchestration
+# Health check for Azure Container Apps
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8080/api/health')" || exit 1
+    CMD curl -f http://localhost:8080/api/health || exit 1
 
-# Use Gunicorn for production deployment instead of Flask dev server
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "--worker-class", "gthread", "--threads", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "--preload", "startup:app"]
+# Use Gunicorn for production deployment (Azure Container Apps compatible)
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--worker-class", "gthread", "--threads", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info", "--preload", "startup:app"]

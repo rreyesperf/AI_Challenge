@@ -7,6 +7,10 @@ gunicorn==21.2.0
 # Basic HTML/text processing
 beautifulsoup4==4.12.2
 
+# Azure monitoring (optional but recommended for production)
+opencensus-ext-azure==1.1.13
+opencensus-ext-flask==0.8.0
+
 # LLM providers (install only what you need)
 # Uncomment the ones you want to use:
 

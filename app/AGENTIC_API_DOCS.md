@@ -2,71 +2,130 @@
 
 ## Overview
 
-This Flask application provides an advanced Agentic API that connects to multiple LLM models for Retrieval-Augmented Generation (RAG) analysis. The API supports multiple LLM providers, document ingestion, intelligent travel planning, and multi-provider consensus mechanisms.
+The Agentic RAG API provides advanced conversational AI capabilities with intelligent agentic workflows, multi-LLM provider support, and Retrieval-Augmented Generation (RAG) functionality. This API is designed for building sophisticated AI applications that can handle complex travel planning, document analysis, and multi-provider consensus scenarios.
 
-## Features
+## 🤖 Agentic Features
 
-- **Multi-LLM Support**: OpenAI, Anthropic, Google Gemini, Azure OpenAI
-- **RAG Capabilities**: Document ingestion, vector search, and context-aware responses
-- **Agentic Workflows**: Intelligent travel planning, document Q&A, consensus analysis
-- **Vector Databases**: ChromaDB, Pinecone, FAISS support
-- **Document Processing**: PDF, DOCX, TXT, HTML file support
+### What Makes This API "Agentic"
 
-## Environment Variables
+1. **Multi-Step Reasoning**: The API can break down complex queries into multiple steps and execute them intelligently
+2. **Provider Fallback**: Automatically tries multiple LLM providers in priority order for reliability
+3. **Context Awareness**: Maintains conversation context and uses it for better decision-making
+4. **Travel Planning Agent**: Specialized agent for comprehensive travel planning with real-time data
+5. **Document Intelligence**: RAG system that can understand and reason about uploaded documents
+6. **Consensus Building**: Aggregates responses from multiple LLMs to provide balanced insights
 
-### Required LLM API Keys (at least one must be configured):
+### Provider Priority System
+
+The API automatically selects the best available LLM provider using this priority order:
+
+1. **Ollama** (Local LLM) - Highest priority, cost-effective, private
+2. **OpenAI** - High-quality responses, widely compatible  
+3. **Anthropic Claude** - Strong reasoning capabilities
+4. **Google Gemini** - Good for diverse tasks
+
+This ensures reliability and cost optimization while maintaining high-quality responses.
+
+## 🎯 Core Agentic Workflows
+
+### 1. Intelligent Travel Planning Agent
+
+The travel planning agent demonstrates advanced agentic behavior by:
+- Analyzing user intent and extracting structured information
+- Coordinating multiple travel services (flights, hotels, dining)
+- Providing personalized recommendations based on preferences
+- Handling complex multi-step travel scenarios
+
+**Capabilities:**
+- Budget analysis and optimization
+- Multi-destination trip planning
+- Real-time availability checking
+- Preference learning and adaptation
+- Alternative suggestion generation
+
+### 2. Multi-Provider Consensus Engine
+
+This workflow showcases collective intelligence by:
+- Querying multiple LLM providers simultaneously
+- Analyzing different perspectives on the same question
+- Synthesizing responses into a balanced consensus
+- Identifying areas of agreement and disagreement
+
+**Use Cases:**
+- Critical decision making
+- Research and analysis
+- Complex problem solving
+- Quality assurance for AI responses
+
+### 3. RAG-Powered Document Intelligence
+
+The RAG system provides document-aware intelligence by:
+- Processing and understanding various document types
+- Creating semantic embeddings for intelligent retrieval
+- Providing context-aware answers based on document content
+- Maintaining source attribution and confidence scores
+
+**Document Support:**
+- PDF files (reports, manuals, guides)
+- Word documents (policies, procedures)
+- Text files (data, logs, notes)
+- HTML content (web pages, articles)
+
+## 🌐 Environment Configuration
+
+For installation and setup instructions, see `README.md`. Here are the key agentic-specific configurations:
+
+### LLM Provider Priority Configuration
 ```env
+# The API will try providers in this order:
+# 1. Ollama (if available)
+# 2. OpenAI (if API key configured)
+# 3. Anthropic (if API key configured)  
+# 4. Google (if API key configured)
+
+# Local LLM (Highest Priority)
+OLLAMA_BASE_URL=http://localhost:11434
+
+# Cloud Providers (Fallback)
 OPENAI_API_KEY=your_openai_api_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
 GOOGLE_API_KEY=your_google_api_key
 
-# Azure OpenAI (uses standard openai package)
-AZURE_OPENAI_ENDPOINT=your_azure_endpoint
-AZURE_OPENAI_API_KEY=your_azure_api_key
-AZURE_OPENAI_API_VERSION=2024-02-15-preview
-```
-
-### Vector Database Configuration:
-```env
-# ChromaDB (default)
-CHROMA_PERSIST_DIRECTORY=./data/chroma
-
-# Pinecone (optional)
-PINECONE_API_KEY=your_pinecone_api_key
-PINECONE_ENVIRONMENT=your_pinecone_environment
-```
-
-### LLM Configuration:
-```env
-DEFAULT_LLM_PROVIDER=local_llm
-DEFAULT_MODEL=local-model
+# Advanced LLM Settings
 MAX_TOKENS=2000
 TEMPERATURE=0.7
 ```
 
-### RAG Configuration:
+### RAG System Configuration
 ```env
+# Vector Database Settings
+CHROMA_PERSIST_DIRECTORY=./data/chroma
 CHUNK_SIZE=1000
 CHUNK_OVERLAP=200
 TOP_K_RESULTS=5
 SIMILARITY_THRESHOLD=0.7
+
+# Alternative: Pinecone (Cloud Vector DB)
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_ENVIRONMENT=your_pinecone_environment
 ```
 
-## API Endpoints
+## 📡 API Endpoints
 
-### 1. Basic Chat Endpoints
+### Core Chat & Conversation Endpoints
 
 #### POST `/api/ai/chat`
-Basic chat with provider selection.
+Enhanced conversational chat with automatic provider selection and travel intelligence.
 
 **Request:**
 ```json
 {
-  "message": "Hello, how can you help me?",
-  "provider": "openai",  // optional
-  "system_message": "You are a helpful assistant",  // optional
-  "max_tokens": 1000,  // optional
-  "temperature": 0.7  // optional
+  "message": "I need help planning a trip to Tokyo for 5 days under $2000",
+  "conversation_history": [],  // optional
+  "provider": "ollama",        // optional - if not specified, uses priority order
+  "system_message": "You are a helpful travel assistant",  // optional
+  "max_tokens": 1000,         // optional
+  "temperature": 0.7          // optional
 }
 ```
 
@@ -74,46 +133,62 @@ Basic chat with provider selection.
 ```json
 {
   "success": true,
-  "response": "Hello! I'm here to help...",
-  "provider": "openai",
-  "model": "gpt-3.5-turbo"
+  "response": "I'd be happy to help you plan your Tokyo trip! Based on your $2000 budget for 5 days...",
+  "provider": "ollama",
+  "model": "llama3:8b",
+  "conversation_type": "travel_planning",
+  "status": "collecting_info"
 }
 ```
 
 #### POST `/api/ai/conversation`
-Multi-turn conversation support.
+Multi-turn conversation with context preservation.
 
 **Request:**
 ```json
 {
   "messages": [
-    {"role": "system", "content": "You are a helpful assistant"},
-    {"role": "user", "content": "What is the weather like?"},
-    {"role": "assistant", "content": "I don't have access to real-time weather data..."},
-    {"role": "user", "content": "Can you help me with travel planning?"}
+    {"role": "system", "content": "You are a travel planning expert"},
+    {"role": "user", "content": "What's the best time to visit Japan?"},
+    {"role": "assistant", "content": "The best times to visit Japan are..."},
+    {"role": "user", "content": "What about cherry blossom season specifically?"}
   ],
-  "provider": "anthropic"  // optional
+  "provider": "openai"  // optional
 }
 ```
 
-### 2. Agentic Workflows
+### 🤖 Advanced Agentic Workflows
 
 #### POST `/api/ai/travel-agent`
-Intelligent travel planning agent that analyzes travel queries and provides recommendations.
+Intelligent travel planning agent with multi-step reasoning and real-time data integration.
+
+**Agentic Behavior:**
+1. **Intent Analysis**: Extracts travel preferences, budget, dates, and requirements
+2. **Service Coordination**: Coordinates flights, hotels, dining, and activities
+3. **Recommendation Engine**: Provides personalized suggestions based on analysis
+4. **Alternative Planning**: Suggests alternatives if initial preferences aren't available
 
 **Request:**
 ```json
 {
-  "query": "I need a family vacation to Paris for 5 days under $3000",
+  "query": "Plan a romantic weekend in Paris for our anniversary, budget around $1500",
   "flight_params": {
     "origin": "NYC",
-    "destination": "CDG",
-    "date": "2024-08-15"
+    "destination": "CDG", 
+    "departure_date": "2024-09-15",
+    "return_date": "2024-09-17"
   },
   "hotel_params": {
     "location": "Paris",
-    "checkin_date": "2024-08-15",
-    "checkout_date": "2024-08-20"
+    "checkin_date": "2024-09-15",
+    "checkout_date": "2024-09-17",
+    "guests": 2
+  },
+  "preferences": {
+    "trip_type": "romantic",
+    "accommodation_type": "boutique_hotel",
+    "dining_style": "fine_dining",
+    "activities": ["museums", "Seine_cruise", "Eiffel_Tower"]
   }
 }
 ```
@@ -121,24 +196,43 @@ Intelligent travel planning agent that analyzes travel queries and provides reco
 **Response:**
 ```json
 {
-  "user_query": "I need a family vacation to Paris...",
-  "intent_analysis": "Travel type: family leisure, Budget: $3000, Destination: Paris...",
-  "travel_analysis": {
-    "recommendations": "Based on your requirements...",
-    "provider_used": "openai_gpt4"
+  "user_query": "Plan a romantic weekend in Paris...",
+  "intent_analysis": {
+    "trip_type": "romantic leisure",
+    "budget_range": "$1500",
+    "duration": "2 days",
+    "destination": "Paris, France",
+    "special_occasion": "anniversary",
+    "traveler_count": 2
   },
-  "timestamp": "2024-01-15T10:30:00"
+  "travel_analysis": {
+    "recommendations": "For your romantic Paris anniversary...",
+    "flight_options": [...],
+    "hotel_recommendations": [...],
+    "dining_suggestions": [...],
+    "activity_plan": [...],
+    "budget_breakdown": {...},
+    "provider_used": "ollama"
+  },
+  "timestamp": "2025-07-31T10:30:00Z"
 }
 ```
 
 #### POST `/api/ai/consensus`
-Get consensus from multiple LLM providers.
+Multi-provider consensus engine for complex decision making.
+
+**Agentic Behavior:**
+1. **Parallel Querying**: Simultaneously queries multiple LLM providers
+2. **Response Analysis**: Analyzes different perspectives and approaches
+3. **Consensus Building**: Synthesizes responses into balanced recommendations
+4. **Confidence Scoring**: Provides confidence levels for different aspects
 
 **Request:**
 ```json
 {
-  "prompt": "What are the best practices for sustainable travel?",
-  "providers": ["openai", "anthropic", "google"]
+  "prompt": "What are the most important factors to consider when choosing a travel destination during economic uncertainty?",
+  "providers": ["ollama", "openai", "anthropic"],  // optional - uses all available if not specified
+  "consensus_type": "balanced"  // options: "balanced", "conservative", "optimistic"
 }
 ```
 
@@ -146,26 +240,57 @@ Get consensus from multiple LLM providers.
 ```json
 {
   "success": true,
-  "question": "What are the best practices for sustainable travel?",
+  "question": "What are the most important factors...",
   "individual_responses": {
-    "openai": {"response": "Sustainable travel involves..."},
-    "anthropic": {"response": "To travel sustainably..."},
-    "google": {"response": "Eco-friendly travel means..."}
+    "ollama": {
+      "response": "During economic uncertainty, travelers should prioritize...",
+      "model": "llama3:8b",
+      "confidence": 0.85
+    },
+    "openai": {
+      "response": "Key considerations include exchange rates...",
+      "model": "gpt-3.5-turbo", 
+      "confidence": 0.92
+    },
+    "anthropic": {
+      "response": "Economic factors that affect travel decisions...",
+      "model": "claude-3-sonnet",
+      "confidence": 0.88
+    }
   },
-  "consensus": "Based on multiple AI perspectives, sustainable travel best practices include...",
-  "providers_used": ["openai", "anthropic", "google"]
+  "consensus": "Based on analysis from multiple AI perspectives, the most critical factors during economic uncertainty are: 1) Exchange rate stability and currency strength, 2) Political and economic stability of the destination...",
+  "confidence_score": 0.88,
+  "agreement_level": "high",
+  "providers_used": ["ollama", "openai", "anthropic"],
+  "processing_time": "3.2s"
 }
 ```
 
-### 3. RAG (Retrieval-Augmented Generation) Endpoints
+### 🧠 RAG (Retrieval-Augmented Generation) Endpoints
 
 #### POST `/api/ai/rag/ingest`
-Ingest documents into the RAG system.
+Intelligent document ingestion with semantic understanding.
+
+**Agentic Behavior:**
+1. **Format Detection**: Automatically detects and processes different file types
+2. **Semantic Chunking**: Intelligently splits documents preserving context
+3. **Metadata Extraction**: Extracts relevant metadata and document structure
+4. **Vector Embedding**: Creates semantic embeddings for intelligent retrieval
 
 **Request:**
 ```json
 {
-  "file_path": "/path/to/document.pdf"
+  "file_path": "/path/to/travel_guide.pdf",
+  "metadata": {
+    "category": "travel_guide",
+    "region": "Europe",
+    "language": "en"
+  },
+  "processing_options": {
+    "chunk_size": 1000,
+    "overlap": 200,
+    "preserve_structure": true
+  }
 }
 ```
 
@@ -173,27 +298,48 @@ Ingest documents into the RAG system.
 ```json
 {
   "success": true,
-  "message": "Successfully ingested 15 chunks",
-  "document_hash": "abc123def456",
-  "chunk_count": 15,
+  "message": "Successfully ingested travel guide with semantic analysis",
+  "document_hash": "abc123def456789",
+  "chunk_count": 24,
   "metadata": {
-    "file_name": "document.pdf",
-    "file_type": ".pdf",
-    "file_size": 1024000,
-    "processed_at": "2024-01-15T10:30:00"
+    "file_name": "travel_guide.pdf",
+    "file_type": "pdf",
+    "file_size": 2048000,
+    "processing_time": "15.3s",
+    "language_detected": "en",
+    "topic_categories": ["travel", "europe", "culture"],
+    "processed_at": "2025-07-31T10:30:00Z"
+  },
+  "indexing_stats": {
+    "total_tokens": 15420,
+    "unique_concepts": 347,
+    "embedding_model": "sentence-transformers",
+    "vector_dimensions": 384
   }
 }
 ```
 
 #### POST `/api/ai/rag/query`
-Query documents using RAG.
+Intelligent document querying with context-aware responses.
+
+**Agentic Behavior:**
+1. **Query Understanding**: Analyzes intent and extracts key concepts
+2. **Semantic Search**: Finds relevant content across all ingested documents
+3. **Context Assembly**: Combines multiple relevant chunks intelligently
+4. **Source Attribution**: Maintains clear source references and confidence
 
 **Request:**
 ```json
 {
-  "question": "What are the main points about customer service?",
-  "top_k": 5,  // optional
-  "provider": "openai"  // optional
+  "question": "What are the best budget accommodations in Rome with good transportation links?",
+  "top_k": 5,
+  "filters": {
+    "document_type": "travel_guide",
+    "region": "Europe",
+    "topic": ["accommodation", "transportation"]
+  },
+  "provider": "ollama",  // optional
+  "include_sources": true
 }
 ```
 
@@ -201,68 +347,124 @@ Query documents using RAG.
 ```json
 {
   "success": true,
-  "question": "What are the main points about customer service?",
-  "answer": "Based on the documents, the main points about customer service are...",
+  "question": "What are the best budget accommodations in Rome...",
+  "answer": "Based on the travel guides, here are the top budget accommodations in Rome with excellent transportation links: 1) Hotel Artemide near Termini Station offers...",
   "sources": [
     {
-      "text": "Customer service is crucial for business success...",
-      "file_name": "business_guide.pdf",
-      "similarity_score": 0.89,
-      "chunk_index": 3
+      "text": "Hotel Artemide, located just 200 meters from Roma Termini station...",
+      "file_name": "rome_travel_guide.pdf",
+      "similarity_score": 0.92,
+      "chunk_index": 15,
+      "page_number": 23,
+      "confidence": 0.89
+    },
+    {
+      "text": "For budget travelers, Hostel Alessandro Palace provides...",
+      "file_name": "italy_budget_travel.pdf", 
+      "similarity_score": 0.87,
+      "chunk_index": 8,
+      "page_number": 12,
+      "confidence": 0.84
     }
   ],
-  "llm_provider": "openai",
-  "llm_model": "gpt-3.5-turbo",
-  "chunks_used": 3
+  "llm_provider": "ollama",
+  "llm_model": "llama3:8b",
+  "chunks_used": 3,
+  "total_documents_searched": 5,
+  "search_time": "0.8s",
+  "response_time": "2.1s"
 }
 ```
 
 #### DELETE `/api/ai/rag/delete`
-Delete a document from the RAG system.
+Remove documents from the RAG system.
 
 **Request:**
 ```json
 {
-  "document_hash": "abc123def456"
+  "document_hash": "abc123def456789"
 }
 ```
 
-### 4. Utility Endpoints
+### 🛠️ System & Utility Endpoints
 
 #### GET `/api/ai/providers`
-List available LLM providers.
+List available LLM providers with status and capabilities.
 
 **Response:**
 ```json
 {
-  "available_providers": ["openai", "openai_gpt4", "anthropic", "google"],
-  "total_count": 4
+  "available_providers": [
+    {
+      "name": "ollama",
+      "status": "active",
+      "model": "llama3:8b",
+      "priority": 1,
+      "capabilities": ["chat", "completion", "reasoning"],
+      "cost": "free",
+      "latency": "low"
+    },
+    {
+      "name": "openai", 
+      "status": "configured",
+      "model": "gpt-3.5-turbo",
+      "priority": 2,
+      "capabilities": ["chat", "completion", "code", "analysis"],
+      "cost": "paid",
+      "latency": "medium"
+    }
+  ],
+  "total_count": 2,
+  "active_provider": "ollama",
+  "fallback_chain": ["ollama", "openai"]
 }
 ```
 
 #### GET `/api/ai/health`
-Health check for AI services.
+Comprehensive health check for AI services.
 
 **Response:**
 ```json
 {
   "status": "healthy",
-  "available_providers": 4,
-  "providers": ["openai", "anthropic", "google", "azure_openai"],
+  "available_providers": 2,
+  "providers": {
+    "ollama": {
+      "status": "healthy",
+      "response_time": "0.5s",
+      "last_check": "2025-07-31T10:29:45Z"
+    },
+    "openai": {
+      "status": "healthy", 
+      "response_time": "1.2s",
+      "last_check": "2025-07-31T10:29:45Z"
+    }
+  },
   "rag_enabled": true,
-  "timestamp": "2024-01-15T10:30:00"
+  "rag_status": {
+    "vector_db": "chromadb",
+    "documents_indexed": 15,
+    "total_chunks": 342,
+    "last_indexed": "2025-07-31T09:15:30Z"
+  },
+  "system_health": {
+    "memory_usage": "512MB",
+    "disk_space": "2.1GB available",
+    "uptime": "2h 15m"
+  },
+  "timestamp": "2025-07-31T10:30:00Z"
 }
 ```
 
-### 5. Existing Travel Endpoints
+### 🌍 Legacy Travel Endpoints
 
-The API maintains backward compatibility with existing travel endpoints:
+These endpoints are maintained for backward compatibility:
 
-- `GET /api/flights` - Flight search
-- `GET /api/hotels` - Hotel search  
-- `GET /api/dining` - Restaurant search
+- `GET /api/flights` - Flight search functionality
+- `GET /api/hotels` - Hotel search functionality  
+- `GET /api/dining` - Restaurant search functionality
 - `GET /api/transportation` - Transportation options
-- `POST /aggregate` - Aggregate travel results
+- `POST /api/aggregate` - Aggregate travel results
 
 ## Installation & Setup
 
