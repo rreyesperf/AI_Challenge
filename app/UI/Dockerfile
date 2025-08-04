@@ -9,19 +9,33 @@ ARG REACT_APP_AUTH_USERNAME
 ARG REACT_APP_AUTH_PASSWORD
 ARG REACT_APP_API_URL
 
+# Set environment variables for the build process
+ENV REACT_APP_AUTH_USERNAME=${REACT_APP_AUTH_USERNAME}
+ENV REACT_APP_AUTH_PASSWORD=${REACT_APP_AUTH_PASSWORD}
+ENV REACT_APP_API_URL=${REACT_APP_API_URL}
+
 # Set working directory
 WORKDIR /app
 
 # Copy package.json for dependency installation
 COPY package.json ./
 
-# Clear npm cache and install dependencies
-# Use npm install since package-lock.json doesn't exist
-RUN npm cache clean --force && \
-    npm install --silent --no-fund --no-audit
+# Set npm configuration for better compatibility
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 3 && \
+    npm cache clean --force
+
+# Install dependencies with legacy peer deps to avoid conflicts
+RUN npm install --legacy-peer-deps --silent --no-fund --no-audit
 
 # Copy source code
 COPY . .
+
+# Set build environment variables
+ENV GENERATE_SOURCEMAP=false
+ENV CI=true
+ENV NODE_OPTIONS=--max_old_space_size=4096
 
 # Build the React application for production
 # Environment variables are embedded during build
