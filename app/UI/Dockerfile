@@ -12,12 +12,12 @@ ARG REACT_APP_API_URL
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json for dependency installation
-COPY package*.json ./
+# Copy package.json for dependency installation
+COPY package.json ./
 
 # Install dependencies
-# Use npm ci for faster, reliable, reproducible builds in production
-RUN npm ci --only=production --silent
+# Use npm install since package-lock.json doesn't exist
+RUN npm install --silent
 
 # Copy source code
 COPY . .
@@ -95,23 +95,6 @@ EOF
 
 # Copy built React application from builder stage
 COPY --from=builder /app/build /usr/share/nginx/html
-
-# Create non-root user for security (Azure Container Apps best practice)
-RUN addgroup -g 1000 -S nginx && \
-    adduser -u 1000 -D -S -G nginx nginx
-
-# Change ownership of Nginx directories to non-root user
-RUN chown -R nginx:nginx /var/cache/nginx && \
-    chown -R nginx:nginx /var/log/nginx && \
-    chown -R nginx:nginx /etc/nginx/conf.d && \
-    chown -R nginx:nginx /usr/share/nginx/html
-
-# Create nginx.pid directory with proper permissions
-RUN mkdir -p /var/run && \
-    chown -R nginx:nginx /var/run
-
-# Switch to non-root user
-USER nginx
 
 # Expose port 8080 (Azure Container Apps will map this to 443 externally)
 EXPOSE 8080
