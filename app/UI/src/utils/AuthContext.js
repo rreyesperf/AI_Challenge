@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     
     // Remove potentially dangerous characters while preserving valid password chars
     // Allow alphanumeric, spaces, and common password special characters
-    return input.replace(/[<>\"'&\x00-\x1f\x7f-\x9f]/g, '');
+    return input.replace(/[<>'"&\u0000-\u001f\u007f-\u009f]/g, '');
   };
 
   const secureCompare = (input, expected) => {
