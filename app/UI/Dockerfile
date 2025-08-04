@@ -15,9 +15,10 @@ WORKDIR /app
 # Copy package.json for dependency installation
 COPY package.json ./
 
-# Install dependencies
+# Clear npm cache and install dependencies
 # Use npm install since package-lock.json doesn't exist
-RUN npm install --silent
+RUN npm cache clean --force && \
+    npm install --silent --no-fund --no-audit
 
 # Copy source code
 COPY . .
