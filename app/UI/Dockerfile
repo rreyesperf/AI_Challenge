@@ -26,8 +26,8 @@ RUN npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retries 3 && \
     npm cache clean --force
 
-# Install dependencies with legacy peer deps and force to resolve conflicts
-RUN npm install --legacy-peer-deps --force --silent --no-fund --no-audit
+# Install dependencies 
+RUN npm install --legacy-peer-deps --silent --no-fund --no-audit
 
 # Copy source code
 COPY . .

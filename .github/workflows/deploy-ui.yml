@@ -43,7 +43,9 @@ jobs:
     - name: 📦 Install dependencies
       working-directory: ./app/UI
       run: |
-        npm install --legacy-peer-deps --force --silent
+        npm cache clean --force
+        rm -rf node_modules package-lock.json
+        npm install --legacy-peer-deps --silent
 
     - name: 🔍 Lint code
       working-directory: ./app/UI
