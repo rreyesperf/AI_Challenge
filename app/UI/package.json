@@ -54,11 +54,17 @@
     "svgo": "^2.8.0",
     "css-select": "^4.3.0",
     "resolve-url-loader": "^5.0.0",
+    "ajv": "6.12.6",
+    "ajv-keywords": "3.5.2",
+    "schema-utils": "2.7.1",
     "react-scripts": {
       "nth-check": "^2.1.1",
       "postcss": "^8.4.47",
       "webpack-dev-server": "^4.15.2",
-      "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15"
+      "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15",
+      "ajv": "6.12.6",
+      "ajv-keywords": "3.5.2",
+      "schema-utils": "2.7.1"
     },
     "@pmmmwh/react-refresh-webpack-plugin": {
       "webpack-dev-server": "^4.15.2"

@@ -43,7 +43,7 @@ jobs:
     - name: 📦 Install dependencies
       working-directory: ./app/UI
       run: |
-        npm install --legacy-peer-deps --silent
+        npm install --legacy-peer-deps --force --silent
 
     - name: 🔍 Lint code
       working-directory: ./app/UI
@@ -60,6 +60,8 @@ jobs:
       env:
         GENERATE_SOURCEMAP: false
         CI: true
+        NODE_OPTIONS: --max_old_space_size=4096
+        SKIP_PREFLIGHT_CHECK: true
         REACT_APP_API_URL: ${{ secrets.UI_URL }}
       run: |
         npm run build
@@ -117,7 +119,7 @@ jobs:
         build-args: |
           REACT_APP_AUTH_USERNAME=${{ secrets.UI_AUTH_USERNAME }}
           REACT_APP_AUTH_PASSWORD=${{ secrets.UI_AUTH_PASSWORD }}
-          REACT_APP_API_URL=:${{ secrets.UI_URL }}
+          REACT_APP_API_URL=${{ secrets.UI_URL }}
         
     - name: 📋 Image build summary
       run: |

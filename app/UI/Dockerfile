@@ -26,8 +26,8 @@ RUN npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retries 3 && \
     npm cache clean --force
 
-# Install dependencies with legacy peer deps to avoid conflicts
-RUN npm install --legacy-peer-deps --silent --no-fund --no-audit
+# Install dependencies with legacy peer deps and force to resolve conflicts
+RUN npm install --legacy-peer-deps --force --silent --no-fund --no-audit
 
 # Copy source code
 COPY . .
@@ -36,6 +36,7 @@ COPY . .
 ENV GENERATE_SOURCEMAP=false
 ENV CI=true
 ENV NODE_OPTIONS=--max_old_space_size=4096
+ENV SKIP_PREFLIGHT_CHECK=true
 
 # Build the React application for production
 # Environment variables are embedded during build
