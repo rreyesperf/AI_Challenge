@@ -61,7 +61,7 @@ jobs:
       working-directory: ./app/UI
       env:
         GENERATE_SOURCEMAP: false
-        CI: true
+        CI: "false"
         NODE_OPTIONS: --max_old_space_size=4096
         SKIP_PREFLIGHT_CHECK: true
         REACT_APP_API_URL: ${{ secrets.UI_URL }}
