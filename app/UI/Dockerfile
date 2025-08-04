@@ -34,7 +34,7 @@ COPY . .
 
 # Set build environment variables
 ENV GENERATE_SOURCEMAP=false
-ENV CI=true
+ENV CI=false
 ENV NODE_OPTIONS=--max_old_space_size=4096
 ENV SKIP_PREFLIGHT_CHECK=true
 
