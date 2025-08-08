@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import logging
 
 # Import the enhanced services
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 def create_app():
     """Create and configure the Flask application with minimal endpoints"""
     app = Flask(__name__)
+    CORS(app)
     
     # Configure logging
     logging.basicConfig(level=logging.INFO)

@@ -193,7 +193,7 @@ jobs:
     - name: Deployment Summary
       run: |
         echo "🚀 API Deployment completed successfully!"
-        echo "📦 Image: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        echo "📦 Image: ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
         echo "🌐 Application URL: ${{ steps.get-url.outputs.APP_URL }}"
         echo "📊 Resource Group: ${{ env.RESOURCE_GROUP_NAME }}"
         echo "🏗️ Container App: ${{ env.CONTAINER_APP_NAME }}"
