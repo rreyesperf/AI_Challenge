@@ -63,7 +63,8 @@ export const AuthProvider = ({ children }) => {
       // Get credentials from environment variables
       const validUsername = process.env.REACT_APP_AUTH_USERNAME;
       const validPassword = process.env.REACT_APP_AUTH_PASSWORD;
-      
+      console.log(validUsername);
+      console.log(validPassword);
       // Debug logging (remove in production)
       if (process.env.REACT_APP_DEBUG_MODE === 'true') {
         console.log('Auth Debug - Environment variables loaded:', {
